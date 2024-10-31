@@ -1,0 +1,12 @@
+services:
+  env_base:
+    container_name: env_base
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: {{version}}
+    volumes:
+      - ${PWD}:/app
+    command: tail -f /dev/null
+    stdin_open: true
