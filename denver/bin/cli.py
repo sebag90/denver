@@ -9,7 +9,7 @@ def get_args():
 
     init = subparsers.add_parser("init", help="create a new environment")
     init.add_argument("name")
-    init.add_argument("--version", "-v", required=True, type=float)
+    init.add_argument("--version", "-v", default="3.12", type=str)
 
     activate = subparsers.add_parser("activate")
     activate.add_argument("name")

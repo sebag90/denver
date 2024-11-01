@@ -1,6 +1,6 @@
 services:
-  env_base:
-    container_name: env_base
+  denver_{{name}}:
+    container_name: denver_{{name}}
     build:
       context: .
       dockerfile: Dockerfile

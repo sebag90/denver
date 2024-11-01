@@ -18,6 +18,8 @@ RUN apt update \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-COPY scripts/.bashrc /home/${USERNAME}/
+COPY bashrc /home/${USERNAME}/.bashrc
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 USER $USERNAME
+
+WORKDIR /app

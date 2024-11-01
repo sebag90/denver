@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="denv",
+    name="denver",
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
@@ -27,7 +27,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={"": ["template/*"]},
+    package_data={"": ["template/*", "config.toml"]},
     # data_files=[('project/configuration', ['project/configuration/configuration.ini.template'])],
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -38,6 +38,6 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        "console_scripts": ["denv = denv.bin.run:main"],
+        "console_scripts": ["denver = denver.bin.run:main"],
     },
 )
