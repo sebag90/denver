@@ -1,17 +1,9 @@
 from pathlib import Path
 
 from .utils import get_env_base_dir
+from .remove import remove_env
 
 ROOT = Path(__file__).parent.parent.resolve()
-
-
-def rm_tree(pth):
-    for child in pth.iterdir():
-        if child.is_file():
-            child.unlink()
-        else:
-            rm_tree(child)
-    pth.rmdir()
 
 
 def main(args):
@@ -25,10 +17,7 @@ def main(args):
             f"{args.name} exists already, do you want to replace it? [y/n]\n> "
         )
         if user_input.lower().strip() == "y":
-            print(
-                "Deleting old environment's configuration. Take care of deleting the remaining docker images"
-            )
-            rm_tree(new_env_dir)
+            remove_env(args.name)
         else:
             return
 
