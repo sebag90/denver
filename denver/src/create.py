@@ -8,7 +8,6 @@ ROOT = Path(__file__).parent.parent.resolve()
 
 def main(args):
     denver_dir = get_env_base_dir()
-
     denver_dir.mkdir(exist_ok=True)
     new_env_dir = Path(f"{denver_dir}/{args.name}")
 
@@ -16,10 +15,10 @@ def main(args):
         user_input = input(
             f"{args.name} exists already, do you want to replace it? [y/n]\n> "
         )
-        if user_input.lower().strip() == "y":
-            remove_env(args.name)
-        else:
+        if user_input.lower().strip() != "y":
             return
+
+        remove_env(args.name)
 
     new_env_dir.mkdir(parents=True)
 
@@ -33,7 +32,3 @@ def main(args):
             templated_file = templated_file.replace(to_replace, value)
 
         Path(f"{new_env_dir}/{file.name}").write_text(templated_file, encoding="utf-8")
-
-    # create env and requirements file
-    Path(f"{new_env_dir}/env").write_text("")
-    Path(f"{new_env_dir}/requirements").write_text("ipython")
