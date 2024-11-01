@@ -1,9 +1,11 @@
 from pathlib import Path
 import tomllib
 
+
 def get_config():
     ROOT = Path(__file__).parent.parent.resolve()
     return tomllib.loads(Path(f"{ROOT}/config.toml").read_text())
+
 
 def get_env_base_dir():
     config = get_config()
