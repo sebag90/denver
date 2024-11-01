@@ -12,6 +12,7 @@ def get_args():
     create.add_argument("--version", "-v", default="3.12", type=str)
 
     subparsers.add_parser("list", help="list all available environments")
+    subparsers.add_parser("prune", help="remove all environments")
 
     activate = subparsers.add_parser(
         "activate", help="activate the shell of an environment"
