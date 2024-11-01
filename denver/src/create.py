@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from .utils import get_env_base_dir
-from .remove import remove_env
+from .utils import get_env_base_dir, remove_env
+
 
 ROOT = Path(__file__).parent.parent.resolve()
 
@@ -33,3 +33,7 @@ def main(args):
             templated_file = templated_file.replace(to_replace, value)
 
         Path(f"{new_env_dir}/{file.name}").write_text(templated_file, encoding="utf-8")
+
+    # create env and requirements file
+    Path(f"{new_env_dir}/env").write_text("")
+    Path(f"{new_env_dir}/requirements").write_text("ipython")

@@ -14,7 +14,7 @@ def main(args):
             "docker",
             "compose",
             "-f",
-            Path(f"{denver_base_dir}/{args.name}/compose.yml"),
+            Path(f"{denver_base_dir}/{args.name}/compose"),
             "up",
             "-d",
         ]
