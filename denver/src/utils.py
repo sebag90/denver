@@ -48,10 +48,8 @@ def remove_env(name):
 
     if env_dir.exists():
         stop_docker(name)
-    try:
-        subprocess.run(["docker", "image", "rm", f"{name}-denver_{name}"])
-    except FileNotFoundError:
-        pass
+
+    subprocess.run(["docker", "image", "rm", f"{name}-denver_{name}"])
 
     if env_dir.exists():
         rm_tree(env_dir)
