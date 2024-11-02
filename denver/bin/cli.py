@@ -10,6 +10,9 @@ def get_args():
     create = subparsers.add_parser("create", help="create a new environment")
     create.add_argument("name")
     create.add_argument("--version", "-v", default="3.12", type=str)
+    create.add_argument(
+        "--root", action="store_true", help="the user inside the container will be root"
+    )
 
     subparsers.add_parser("list", help="list all available environments")
     subparsers.add_parser("prune", help="remove all environments")

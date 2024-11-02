@@ -32,3 +32,10 @@ def main(args):
             templated_file = templated_file.replace(to_replace, value)
 
         Path(f"{new_env_dir}/{file.name}").write_text(templated_file, encoding="utf-8")
+
+    # pick dockerfile based on root
+    if args.root is True:
+        dockerfile = Path(f"{new_env_dir}/dockerfile.root")
+        dockerfile.replace(dockerfile.with_suffix(""))
+
+    print(f"Environment {args.name} was created")
