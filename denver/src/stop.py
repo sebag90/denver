@@ -1,6 +1,6 @@
-from .utils import stop_docker
+from .utils import docker_compose
 
 
 def main(args):
-    stop_docker(args.name)
+    docker_compose(args.name, "down")
     print(f"Environment {args.name} stopped")

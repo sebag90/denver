@@ -26,7 +26,7 @@ def rm_tree(pth):
     pth.rmdir()
 
 
-def stop_docker(name):
+def docker_compose(name, action):
     denver_base_dir = get_env_base_dir()
     env_dir = Path(f"{denver_base_dir}/{name}")
 
@@ -37,7 +37,7 @@ def stop_docker(name):
                 "compose",
                 "-f",
                 Path(f"{env_dir}/compose"),
-                "down",
+                action,
             ]
         )
 
@@ -47,7 +47,7 @@ def remove_env(name):
     env_dir = Path(f"{denver_base_dir}/{name}")
 
     if env_dir.exists():
-        stop_docker(name)
+        docker_compose(name, "down")
 
     subprocess.run(["docker", "image", "rm", f"{name}-denver_{name}"])
 

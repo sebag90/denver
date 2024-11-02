@@ -17,6 +17,9 @@ def get_args():
     subparsers.add_parser("list", help="list all available environments")
     subparsers.add_parser("prune", help="remove all environments")
 
+    rebuild = subparsers.add_parser("rebuild", help="rebuild an environment from image")
+    rebuild.add_argument("name")
+
     activate = subparsers.add_parser(
         "activate", help="activate the shell of an environment"
     )
