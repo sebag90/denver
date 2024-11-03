@@ -14,15 +14,23 @@ def main(args):
         print("Environment {args.name} is missing, create it first")
         return
 
-    subprocess.run(
-        [
-            "docker",
-            "compose",
-            "-f",
-            compose_file,
-            "up",
-            "-d",
-        ]
+    running_containers = subprocess.run(
+        ["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True
     )
 
-    subprocess.run(["docker", "exec", "-it", f"denver_{args.name}", "bash"])
+    container_name = f"denver_{args.name}"
+
+    # restart container if not running
+    if container_name not in running_containers.stdout:
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                compose_file,
+                "up",
+                "-d",
+            ]
+        )
+
+    subprocess.run(["docker", "exec", "-it", container_name, "bash"])
