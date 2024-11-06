@@ -20,5 +20,13 @@ def main(args):
         file_to_modify.write_text(input_stream.read(), encoding="utf-8")
         return
 
-    editor = os.getenv("EDITOR")
+    editor = os.getenv("EDITOR", "/usr/bin/nano")
+
+    if editor is None or Path(editor).exists() is not True:
+        print(
+            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
+        )
+        return 1
+
     subprocess.run([editor, file_to_modify])
+    return 0
