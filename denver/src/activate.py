@@ -12,7 +12,7 @@ def main(args):
     compose_file = Path(f"{denver_base_dir}/{args.name}/compose")
     if not compose_file.exists():
         print("Environment {args.name} is missing, create it first")
-        return
+        return 1
 
     running_containers = subprocess.run(
         ["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True
@@ -34,3 +34,4 @@ def main(args):
         )
 
     subprocess.run(["docker", "exec", "-it", container_name, "bash"])
+    return 0

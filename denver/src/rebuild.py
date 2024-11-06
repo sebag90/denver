@@ -11,3 +11,4 @@ def main(args):
 
     # rebuild image
     docker_compose(args.name, "build")
+    return 0

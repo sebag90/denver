@@ -6,3 +6,5 @@ def main(args):
     for env_dir in denver_base_config.iterdir():
         if env_dir.is_dir():
             print(f"* {env_dir.stem}")
+
+    return 0

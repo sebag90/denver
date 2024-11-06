@@ -16,7 +16,7 @@ def main(args):
             f"{args.name} exists already, do you want to replace it? [y/n]\n> "
         )
         if user_input.lower().strip() != "y":
-            return
+            return 1
 
         remove_env(args.name)
 
