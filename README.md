@@ -64,4 +64,4 @@ denver rebuild <myproject>
 ```
 
 # Copyright
-`logo.svg` & `mmark.svg` Copyright © 2024 [Matteo Pranzetti](https://www.instagram.com/matteoprnzt/profilecard/?igsh=MXZud3AzcWNxYnRyZQ==). All Rights Reserved.
+`assets/logo.svg` & `assets/mark.svg` Copyright © 2024 [Matteo Pranzetti](https://www.instagram.com/matteoprnzt/profilecard/?igsh=MXZud3AzcWNxYnRyZQ==). All Rights Reserved.
