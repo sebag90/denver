@@ -1,4 +1,7 @@
-# Denver
+<center>
+
+<img alt="micro logo" src="./assets/logo.svg" width="75%"/>
+</center>
 
 Denver is a Python-based tool that simplifies the management of virtual environments using Docker. It provides an intuitive interface to create, manage, and switch between isolated development environments without cluttering your local machine.
 
@@ -59,3 +62,6 @@ denver config -e <myproject> {requirements, env, dockerfile, compose}
 ```bash
 denver rebuild <myproject>
 ```
+
+# Copyright
+`logo.svg` & `mmark.svg` Copyright © 2024 [Matteo Pranzetti](https://www.instagram.com/matteoprnzt/profilecard/?igsh=MXZud3AzcWNxYnRyZQ==). All Rights Reserved.
