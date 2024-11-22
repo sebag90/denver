@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="denver",
-    version="1.0.6",
+    version="0.6.0",
     license="MIT",
     packages=find_packages(),
     install_requires=["pick"],
