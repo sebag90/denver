@@ -16,7 +16,16 @@ def get_args():
     create.add_argument("name")
     create.add_argument("--version", "-v", default="3.12", type=str)
     create.add_argument(
-        "--root", action="store_true", help="the user inside the container will be root"
+        "-r",
+        "--root",
+        action="store_true",
+        help="the user inside the container will be root",
+    )
+    create.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="modify environment files upon creation",
     )
 
     # REBUILD

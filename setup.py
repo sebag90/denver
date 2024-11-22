@@ -2,9 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="denver",
-    version="1.0.5",
+    version="1.0.6",
     license="MIT",
     packages=find_packages(),
+    install_requires=["pick"],
     include_package_data=True,
     package_data={"": ["template/*", "config.toml"]},
     entry_points={

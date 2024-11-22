@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import subprocess
 import tomllib
@@ -53,3 +54,14 @@ def remove_env(name):
 
     if env_dir.exists():
         rm_tree(env_dir)
+
+
+def get_editor():
+    # modify the file with the standard editor
+    editor = os.getenv("EDITOR", "/usr/bin/nano")
+    if editor is None or Path(editor).exists() is not True:
+        raise FileNotFoundError(
+            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
+        )
+
+    return editor

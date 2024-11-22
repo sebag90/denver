@@ -1,10 +1,9 @@
 from io import TextIOWrapper
-import os
 from pathlib import Path
 import subprocess
 import sys
 
-from .utils import get_env_base_dir
+from .utils import get_env_base_dir, get_editor
 
 
 def main(args):
@@ -21,13 +20,7 @@ def main(args):
         file_to_modify.write_text(input_stream.read(), encoding="utf-8")
         return 0
 
-    # modify the file with the standard editor
-    editor = os.getenv("EDITOR", "/usr/bin/nano")
-    if editor is None or Path(editor).exists() is not True:
-        print(
-            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
-        )
-        return 1
-
+    editor = get_editor()
     subprocess.run([editor, file_to_modify])
+
     return 0
