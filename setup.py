@@ -2,8 +2,12 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 
-requirements = Path("requirements.txt").read_text(encoding="utf-8").split("\n")
-version = Path("denver/__version__").read_text()
+requirements = list()
+with Path("requirements.txt").open(encoding="utf-8") as infile:
+    for line in infile:
+        requirements.append(line.strip())
+
+version = Path("denver/__version__").read_text(encoding="utf-8").strip()
 
 
 setup(
