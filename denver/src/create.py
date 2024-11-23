@@ -1,9 +1,6 @@
 from pathlib import Path
-import subprocess
 
-from pick import pick
-
-from .utils import get_env_base_dir, remove_env, get_editor
+from .utils import get_env_base_dir, remove_env, modify_file
 
 
 ROOT = Path(__file__).parent.parent.resolve()
@@ -44,20 +41,7 @@ def main(args):
         dockerfile.unlink()
 
     if args.interactive is True:
-        editor = get_editor()
-
-        while True:
-            options = [i.stem for i in new_env_dir.iterdir() if i.stem != "bashrc"] + [
-                "exit"
-            ]
-            option, index = pick(
-                options, "Which file would you like to modify?", indicator=">"
-            )
-
-            if index == len(options) - 1:
-                break
-
-            subprocess.run([editor, f"{new_env_dir}/{option}"])
+        modify_file(new_env_dir)
 
     print(f"Environment {args.name} was created")
     return 0

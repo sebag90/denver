@@ -3,6 +3,8 @@ from pathlib import Path
 import subprocess
 import tomllib
 
+from pick import pick
+
 
 def get_config():
     ROOT = Path(__file__).parent.parent.resolve()
@@ -37,7 +39,7 @@ def docker_compose(name, action):
                 "docker",
                 "compose",
                 "-f",
-                Path(f"{env_dir}/compose"),
+                Path(f"{env_dir}/docker-compose.yml"),
                 action,
             ]
         )
@@ -65,3 +67,18 @@ def get_editor():
         )
 
     return editor
+
+
+def modify_file(env_base_dir):
+    editor = get_editor()
+
+    while True:
+        options = [i.name for i in env_base_dir.iterdir()] + ["[exit]"]
+        option, index = pick(
+            options, "Which file would you like to modify?", indicator=">"
+        )
+
+        if index == len(options) - 1:
+            return
+
+        subprocess.run([editor, f"{env_base_dir}/{option}"])

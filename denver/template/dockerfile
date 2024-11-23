@@ -16,10 +16,10 @@ RUN apt update \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-COPY requirements /home/${USERNAME}/requirements
-RUN pip install -r /home/${USERNAME}/requirements
+COPY requirements.txt /home/${USERNAME}/requirements.txt
+RUN pip install -r /home/${USERNAME}/requirements.txt
 
-COPY bashrc /home/${USERNAME}/.bashrc
+COPY .bashrc /home/${USERNAME}/.bashrc
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 USER $USERNAME
 
