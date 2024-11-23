@@ -31,7 +31,13 @@ def main(args):
             to_replace = "{{" + var + "}}"
             templated_file = templated_file.replace(to_replace, value)
 
-        Path(f"{new_env_dir}/{file.name}").write_text(templated_file, encoding="utf-8")
+        # hide .bashrc and .env
+        if file.name in {"bashrc", "env"}:
+            file_name = f".{file.name}"
+        else:
+            file_name = file.name
+
+        Path(f"{new_env_dir}/{file_name}").write_text(templated_file, encoding="utf-8")
 
     # pick dockerfile based on root
     dockerfile = Path(f"{new_env_dir}/dockerfile.root")
