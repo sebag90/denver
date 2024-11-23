@@ -73,7 +73,7 @@ def modify_file(env_base_dir):
     editor = get_editor()
 
     while True:
-        options = [i.name for i in env_base_dir.iterdir()] + ["[exit]"]
+        options = sorted([i.name for i in env_base_dir.iterdir()]) + ["** exit **"]
         option, index = pick(
             options, "Which file would you like to modify?", indicator=">"
         )
