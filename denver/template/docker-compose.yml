@@ -10,5 +10,5 @@ services:
       - ${PWD}:/app
     command: tail -f /dev/null
     stdin_open: true
-    env_file: ".env"
+    env_file: "env"
     network_mode: "host"

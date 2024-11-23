@@ -19,7 +19,7 @@ RUN apt update \
 COPY requirements.txt /home/${USERNAME}/requirements.txt
 RUN pip install -r /home/${USERNAME}/requirements.txt
 
-COPY .bashrc /home/${USERNAME}/.bashrc
+COPY bashrc /home/${USERNAME}/.bashrc
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 USER $USERNAME
 
