@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 def get_args():
     parser = ArgumentParser(
-        description="Manage virtual environments with Docker", prog="denv"
+        description="Manage virtual environments with Docker", prog="denver"
     )
     subparsers = parser.add_subparsers(dest="subparser")
 
