@@ -23,7 +23,11 @@ def main(args):
     new_env_dir.mkdir(parents=True)
 
     # copy files from template
-    template_vars = {"version": args.version, "name": args.name}
+    template_vars = {
+        "version": args.version,
+        "name": args.name,
+        "username": "root" if args.root is True else "devuser",
+    }
 
     for file in Path(f"{ROOT}/template").iterdir():
         templated_file = file.read_text(encoding="utf-8")
@@ -39,12 +43,18 @@ def main(args):
 
         Path(f"{new_env_dir}/{file_name}").write_text(templated_file, encoding="utf-8")
 
-    # pick dockerfile based on root
-    dockerfile = Path(f"{new_env_dir}/dockerfile.root")
+    # create dockerfile
+    no_root_dockerfile = Path(f"{new_env_dir}/dockerfile.no_root")
+    no_root_instructions = no_root_dockerfile.read_text(encoding="utf-8")
+    no_root_dockerfile.unlink()
+
     if args.root is True:
-        dockerfile.replace(dockerfile.with_suffix(""))
-    else:
-        dockerfile.unlink()
+        no_root_instructions = ""
+
+    # update dockerfile based on user
+    dockerfile_txt = Path(f"{new_env_dir}/dockerfile").read_text(encoding="utf-8")
+    dockerfile_txt = dockerfile_txt.replace("{{NO_ROOT}}", no_root_instructions)
+    Path(f"{new_env_dir}/dockerfile").write_text(dockerfile_txt, encoding="utf-8")
 
     if args.interactive is True:
         modify_file(new_env_dir)

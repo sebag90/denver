@@ -1,4 +1,4 @@
-ARG VERSION=3.12-slim
+ARG VERSION
 FROM python:${VERSION}
 
 # Keeps Python from generating .pyc files in the container
@@ -7,20 +7,23 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
+ARG USERNAME
+{{NO_ROOT}}
+USER $USERNAME
+
+# install VSCode + extensions
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+RUN code-server --install-extension redhat.vscode-yaml \
+                --install-extension ms-python.python
+
+ENV PATH="${HOME}/.local/bin:${PATH}"
 RUN pip install --upgrade pip
 
-ARG USERNAME=devuser
-RUN groupadd --gid 1000 $USERNAME && useradd --uid 1000 --gid 1000 -m $USERNAME
-RUN apt update \
-    && apt-get install -y sudo gcc git micro \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+COPY requirements.txt /tmp/requirements.txt
+RUN sudo mv /tmp/requirements.txt ${HOME}/requirements.txt
 
-COPY requirements.txt /home/${USERNAME}/requirements.txt
-RUN pip install -r /home/${USERNAME}/requirements.txt
-
-COPY .bashrc /home/${USERNAME}/.bashrc
-ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
-USER $USERNAME
+RUN pip install -r ${HOME}/requirements.txt
+COPY .bashrc /tmp/.bashrc
+RUN sudo mv /tmp/.bashrc ${HOME}/.bashrc
 
 WORKDIR /app
