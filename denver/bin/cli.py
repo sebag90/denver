@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import sys
 
 
 def get_args():
@@ -40,7 +41,9 @@ def get_args():
 
     # REMOVE
     remove = subparsers.add_parser("remove", help="remove an environment")
-    remove.add_argument("name", help="the name of the environment")
+    group = remove.add_mutually_exclusive_group()
+    group.add_argument("name", help="the name of the environment", nargs="?")
+    group.add_argument("--all", action="store_true", help="delete all environments")
 
     # STOP
     stop = subparsers.add_parser("stop", help="stop the container of an environment")
@@ -55,5 +58,10 @@ def get_args():
     args = parser.parse_args()
     if args.subparser not in subparsers.choices.keys():
         parser.print_help()
+
+    if args.subparser == "remove":
+        if args.name is None and args.all is False:
+            remove.print_help()
+            sys.exit()
 
     return args
