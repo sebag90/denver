@@ -16,7 +16,6 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 RUN code-server --install-extension redhat.vscode-yaml \
                 --install-extension ms-python.python
 
-ENV PATH="${HOME}/.local/bin:${PATH}"
 RUN pip install --upgrade pip
 
 COPY requirements.txt /tmp/requirements.txt
