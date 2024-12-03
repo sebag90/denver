@@ -10,7 +10,6 @@ def get_args():
 
     # SIMPLE SUBPARSERS
     subparsers.add_parser("list", help="list all available environments")
-    subparsers.add_parser("prune", help="remove all environments")
 
     # CREATE ENV
     create = subparsers.add_parser("create", help="create a new environment")

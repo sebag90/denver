@@ -27,7 +27,7 @@ def main(args):
     template_vars = {
         "version": args.version,
         "name": args.name,
-        "username": "root" if args.root is True else "devuser",
+        "username": "devuser",
         "user_uid": str(os.getuid()),
         "user_gid": str(os.getgid()),
     }
