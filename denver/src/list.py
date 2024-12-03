@@ -16,7 +16,7 @@ def main(args):
         .split()
     )
 
-    for env_dir in denver_base_dir.iterdir():
+    for env_dir in sorted(denver_base_dir.iterdir()):
         if env_dir.is_dir():
             prefix = "*" if f"denver_{env_dir.stem}" in running_containers else "-"
             print(f"{prefix} {env_dir.stem}")
