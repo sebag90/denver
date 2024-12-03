@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from .utils import get_env_base_dir, remove_env, modify_file
@@ -27,6 +28,8 @@ def main(args):
         "version": args.version,
         "name": args.name,
         "username": "root" if args.root is True else "devuser",
+        "user_uid": str(os.getuid()),
+        "user_gid": str(os.getgid()),
     }
 
     for file in Path(f"{ROOT}/template").iterdir():

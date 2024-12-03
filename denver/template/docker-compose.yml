@@ -7,6 +7,8 @@ services:
       args:
         VERSION: {{version}}
         USERNAME: {{username}}
+        USER_UID: {{user_uid}}
+        USER_GID: {{user_gid}}
     volumes:
       - ${PWD}:/app
     command: tail -f /dev/null

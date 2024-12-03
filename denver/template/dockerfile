@@ -8,7 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN mkdir -p /app
+RUN apt update \
+    && apt-get install -y sudo gcc git micro curl
 
+# select user
 ARG USERNAME
 {{NO_ROOT}}
 USER $USERNAME
@@ -18,12 +21,13 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 RUN code-server --install-extension redhat.vscode-yaml \
                 --install-extension ms-python.python
 
+# update and install pip dependencies
 RUN pip install --upgrade pip
-
 COPY requirements.txt /tmp/requirements.txt
 RUN sudo mv /tmp/requirements.txt ${HOME}/requirements.txt
-
 RUN pip install -r ${HOME}/requirements.txt
+
+# copy bashrc
 COPY .bashrc /tmp/.bashrc
 RUN sudo mv /tmp/.bashrc ${HOME}/.bashrc
 
