@@ -17,12 +17,6 @@ def get_args():
     create.add_argument("name", help="the name of the environment")
     create.add_argument("--version", "-v", default="3.12", type=str)
     create.add_argument(
-        "-r",
-        "--root",
-        action="store_true",
-        help="the user inside the container will be root",
-    )
-    create.add_argument(
         "-i",
         "--interactive",
         action="store_true",
@@ -38,6 +32,12 @@ def get_args():
         "activate", help="activate the shell of an environment"
     )
     activate.add_argument("name", help="the name of the environment")
+    activate.add_argument(
+        "-r",
+        "--root",
+        action="store_true",
+        help="run container as root",
+    )
 
     # REMOVE
     remove = subparsers.add_parser("remove", help="remove an environment")
@@ -51,9 +51,9 @@ def get_args():
 
     # CONFIG
     config = subparsers.add_parser(
-        "config", help="modify the configuration of an environment"
+        "config", help="modify the configuration of an environment or denver itself"
     )
-    config.add_argument("name", help="the name of the environment")
+    config.add_argument("name", help="the name of the environment", nargs="?")
 
     args = parser.parse_args()
     if args.subparser not in subparsers.choices.keys():

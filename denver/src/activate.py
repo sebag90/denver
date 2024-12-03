@@ -33,5 +33,11 @@ def main(args):
             ]
         )
 
-    subprocess.run(["docker", "exec", "-it", container_name, "bash"])
+    command_args_init = ["docker", "exec", "-it"]
+    to_add = [container_name, "bash"]
+
+    if args.root is True:
+        to_add = ["-u", "0:0"] + to_add
+
+    subprocess.run(command_args_init + to_add)
     return 0

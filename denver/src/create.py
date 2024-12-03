@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from .utils import get_env_base_dir, remove_env, modify_file
+from .utils import get_env_base_dir, remove_env, modify_menu
 
 
 ROOT = Path(__file__).parent.parent.resolve()
@@ -46,21 +46,8 @@ def main(args):
 
         Path(f"{new_env_dir}/{file_name}").write_text(templated_file, encoding="utf-8")
 
-    # create dockerfile
-    no_root_dockerfile = Path(f"{new_env_dir}/dockerfile.no_root")
-    no_root_instructions = no_root_dockerfile.read_text(encoding="utf-8")
-    no_root_dockerfile.unlink()
-
-    if args.root is True:
-        no_root_instructions = ""
-
-    # update dockerfile based on user
-    dockerfile_txt = Path(f"{new_env_dir}/dockerfile").read_text(encoding="utf-8")
-    dockerfile_txt = dockerfile_txt.replace("{{NO_ROOT}}", no_root_instructions)
-    Path(f"{new_env_dir}/dockerfile").write_text(dockerfile_txt, encoding="utf-8")
-
     if args.interactive is True:
-        modify_file(new_env_dir)
+        modify_menu(new_env_dir)
 
     print(f"Environment {args.name} was created")
     return 0

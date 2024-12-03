@@ -11,9 +11,18 @@ RUN mkdir -p /app
 RUN apt update \
     && apt-get install -y sudo gcc git micro curl
 
-# select user
+# create a devuser
 ARG USERNAME
-{{NO_ROOT}}
+ARG USER_GID
+ARG USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+
+RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
+    chmod 0440 /etc/sudoers.d/$USERNAME
+
+RUN chown -R $USERNAME:$USERNAME /app
+
 USER $USERNAME
 
 # install VSCode + extensions
@@ -29,6 +38,7 @@ RUN pip install -r ${HOME}/requirements.txt
 
 # copy bashrc
 COPY .bashrc /tmp/.bashrc
-RUN sudo mv /tmp/.bashrc ${HOME}/.bashrc
+RUN sudo cp /tmp/.bashrc ${HOME}/.bashrc
+RUN sudo mv /tmp/.bashrc /root/.bashrc
 
 WORKDIR /app

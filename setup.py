@@ -17,7 +17,7 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     include_package_data=True,
-    package_data={"": ["template/*", "config.toml"]},
+    package_data={"": ["template/*"]},
     entry_points={
         "console_scripts": ["denver = denver.bin.run:main"],
     },

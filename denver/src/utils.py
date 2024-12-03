@@ -1,24 +1,39 @@
+from configparser import ConfigParser
 import os
 from pathlib import Path
 from shutil import which
 import subprocess
-import tomllib
 
 from pick import pick
 
 
+ROOT = Path(__file__).parent.parent.resolve()
+CONFIG_FILE = Path(f"{ROOT}/config.ini")
+
+
+def create_config():
+    if CONFIG_FILE.exists():
+        return
+
+    config = ConfigParser()
+    config["denver"] = {"base_dir": f"{Path().home()}/.denver"}
+    config["containers"] = {"work_dir": "workspace"}
+
+    with CONFIG_FILE.open("w", encoding="utf-8") as ofile:
+        config.write(ofile)
+
+
 def get_config():
-    ROOT = Path(__file__).parent.parent.resolve()
-    return tomllib.loads(Path(f"{ROOT}/config.toml").read_text())
+    create_config()
+
+    config = ConfigParser()
+    config.read(CONFIG_FILE)
+    return config
 
 
 def get_env_base_dir():
     config = get_config()
-    if "venv_dir" in config:
-        return Path(config["venv_dir"])
-    else:
-        home_dir = Path().home()
-        return Path(f"{home_dir}/.denver")
+    return Path(config["denver"]["base_dir"])
 
 
 def rm_tree(pth):
@@ -71,9 +86,12 @@ def get_editor():
     return editor
 
 
-def modify_file(env_base_dir):
+def modify_single_file(file):
     editor = get_editor()
+    subprocess.run([editor, file])
 
+
+def modify_menu(env_base_dir):
     while True:
         options = sorted([i.name for i in env_base_dir.iterdir()]) + ["** exit **"]
         option, index = pick(
@@ -83,4 +101,4 @@ def modify_file(env_base_dir):
         if index == len(options) - 1:
             return
 
-        subprocess.run([editor, f"{env_base_dir}/{option}"])
+        modify_single_file(f"{env_base_dir}/{option}")
