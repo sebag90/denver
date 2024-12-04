@@ -15,8 +15,20 @@ def create_config():
     if CONFIG_FILE.exists():
         return
 
+    editor_name = os.getenv("EDITOR", "nano")
+    if editor_name is None or Path(which(editor_name)).exists() is not True:
+        raise FileNotFoundError(
+            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
+        )
+
+    editor_path = Path(which(editor_name))
+
+    # create config
     config = ConfigParser()
-    config["denver"] = {"base_dir": f"{Path().home()}/.denver"}
+    config["config"] = {
+        "base_dir": f"{Path().home()}/.denver",
+        "editor": str(editor_path),
+    }
     config["containers"] = {"work_dir": "workspace"}
 
     with CONFIG_FILE.open("w", encoding="utf-8") as ofile:
@@ -33,7 +45,7 @@ def get_config():
 
 def get_env_base_dir():
     config = get_config()
-    return Path(config["denver"]["base_dir"])
+    return Path(config["config"]["base_dir"])
 
 
 def rm_tree(pth):
@@ -74,20 +86,9 @@ def remove_env(name):
         rm_tree(env_dir)
 
 
-def get_editor():
-    # modify the file with the standard editor
-    editor = os.getenv("EDITOR", "nano")
-
-    if editor is None or Path(which(editor)).exists() is not True:
-        raise FileNotFoundError(
-            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
-        )
-
-    return editor
-
-
 def modify_single_file(file):
-    editor = get_editor()
+    config = get_config()
+    editor = config["config"]["editor"]
     subprocess.run([editor, file])
 
 
