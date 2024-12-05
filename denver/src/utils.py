@@ -8,44 +8,50 @@ from pick import pick
 
 
 ROOT = Path(__file__).parent.parent.resolve()
-CONFIG_FILE = Path(f"{ROOT}/config.ini")
 
 
-def create_config():
-    if CONFIG_FILE.exists():
-        return
+class Config:
+    class paths:
+        config_file = Path(f"{Path().home()}/.denver/config.ini")
+        template_dir = Path(f"{ROOT}/template")
+        base_dir = Path(f"{Path().home()}/.denver")
+        base_dir.mkdir(exist_ok=True, parents=True)
 
-    editor_name = os.getenv("EDITOR", "nano")
-    if editor_name is None or Path(which(editor_name)).exists() is not True:
-        raise FileNotFoundError(
-            "Missing text editor, set the EDITOR variable in your shell: export EDITOR=<editor of your choice>"
-        )
+    def get_config():
+        Config.create_config()
 
-    editor_path = Path(which(editor_name))
+        config = ConfigParser()
+        config.read(Config.paths.config_file)
+        return config
 
-    # create config
-    config = ConfigParser()
-    config["config"] = {
-        "base_dir": f"{Path().home()}/.denver",
-        "editor": str(editor_path),
-    }
-    config["containers"] = {"work_dir": "workspace"}
+    def create_config():
+        if Config.paths.config_file.exists():
+            return
 
-    with CONFIG_FILE.open("w", encoding="utf-8") as ofile:
-        config.write(ofile)
+        editor_name = os.getenv("EDITOR")
+        if editor_name is None or which(editor_name) is not None:
+            while True:
+                user_input = input(
+                    "No editor found in your environment, enter your preferred editor\n> "
+                )
+                if which(user_input.strip()) is not None:
+                    editor_name = user_input.strip()
+                    print(
+                        f"Your editor: {which(user_input.strip())}. You can change this with: denver config"
+                    )
+                    break
 
+        editor_path = which(editor_name)
 
-def get_config():
-    create_config()
+        # create config
+        config = ConfigParser()
+        config["general"] = {
+            "editor": str(editor_path),
+        }
+        config["containers"] = {"work_dir": "workspace"}
 
-    config = ConfigParser()
-    config.read(CONFIG_FILE)
-    return config
-
-
-def get_env_base_dir():
-    config = get_config()
-    return Path(config["config"]["base_dir"])
+        with Config.paths.config_file.open("w", encoding="utf-8") as ofile:
+            config.write(ofile)
 
 
 def rm_tree(pth):
@@ -58,8 +64,7 @@ def rm_tree(pth):
 
 
 def docker_compose(name, action):
-    denver_base_dir = get_env_base_dir()
-    env_dir = Path(f"{denver_base_dir}/{name}")
+    env_dir = Path(f"{Config.paths.base_dir}/{name}")
 
     if env_dir.exists():
         subprocess.run(
@@ -74,8 +79,7 @@ def docker_compose(name, action):
 
 
 def remove_env(name):
-    denver_base_dir = get_env_base_dir()
-    env_dir = Path(f"{denver_base_dir}/{name}")
+    env_dir = Path(f"{Config.paths.base_dir}/{name}")
 
     if env_dir.exists():
         docker_compose(name, "down")
@@ -87,8 +91,7 @@ def remove_env(name):
 
 
 def modify_single_file(file):
-    config = get_config()
-    editor = config["config"]["editor"]
+    editor = Config.get_config()["general"]["editor"]
     subprocess.run([editor, file])
 
 

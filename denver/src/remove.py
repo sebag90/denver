@@ -1,8 +1,8 @@
-from .utils import remove_env, get_env_base_dir
+from .utils import Config, remove_env
 
 
 def main(args):
-    envs = [file.stem for file in get_env_base_dir().iterdir()]
+    envs = [file.stem for file in Config.paths.base_dir.iterdir() if file.is_dir()]
     if len(envs) == 0:
         print("You have no environments")
         return 1
@@ -23,8 +23,9 @@ def main(args):
         return 0
 
     else:
-        for file in get_env_base_dir().iterdir():
-            remove_env(file.stem)
-            print(f"Environment {file.stem} removed")
+        for file in Config.paths.base_dir.iterdir():
+            if file.is_dir():
+                remove_env(file.stem)
+                print(f"Environment {file.stem} removed")
 
         return 0

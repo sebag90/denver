@@ -1,11 +1,10 @@
 import subprocess
 
-from .utils import get_env_base_dir
+from .utils import Config
 
 
 def main(args):
-    denver_base_dir = get_env_base_dir()
-    if not denver_base_dir.exists():
+    if not Config.paths.base_dir.exists():
         return 0
 
     running_containers = set(
@@ -16,7 +15,7 @@ def main(args):
         .split()
     )
 
-    for env_dir in sorted(denver_base_dir.iterdir()):
+    for env_dir in sorted(Config.paths.base_dir.iterdir()):
         if env_dir.is_dir():
             prefix = "*" if f"denver_{env_dir.stem}" in running_containers else "-"
             print(f"{prefix} {env_dir.stem}")

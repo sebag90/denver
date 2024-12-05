@@ -1,15 +1,14 @@
 from pathlib import Path
 import subprocess
 
-from .utils import get_env_base_dir
+from .utils import Config
 
 
 ROOT = Path(__file__).parent.parent.resolve()
 
 
 def main(args):
-    denver_base_dir = get_env_base_dir()
-    compose_file = Path(f"{denver_base_dir}/{args.name}/docker-compose.yml")
+    compose_file = Path(f"{Config.paths.base_dir}/{args.name}/docker-compose.yml")
     if not compose_file.exists():
         print(f"Environment {args.name} is missing, create it first")
         return 1

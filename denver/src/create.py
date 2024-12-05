@@ -1,16 +1,12 @@
 import os
 from pathlib import Path
 
-from .utils import get_env_base_dir, remove_env, modify_menu
-
-
-ROOT = Path(__file__).parent.parent.resolve()
+from .utils import Config, remove_env, modify_menu
 
 
 def main(args):
-    denver_dir = get_env_base_dir()
-    denver_dir.mkdir(exist_ok=True)
-    new_env_dir = Path(f"{denver_dir}/{args.name}")
+    Config.paths.base_dir.mkdir(exist_ok=True)
+    new_env_dir = Path(f"{Config.paths.base_dir}/{args.name}")
 
     if new_env_dir.exists():
         user_input = input(
@@ -32,7 +28,7 @@ def main(args):
         "user_gid": str(os.getgid()),
     }
 
-    for file in Path(f"{ROOT}/template").iterdir():
+    for file in Config.paths.template_dir.iterdir():
         templated_file = file.read_text(encoding="utf-8")
         for var, value in template_vars.items():
             to_replace = "{{" + var + "}}"
