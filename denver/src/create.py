@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 
 from .utils import Config, remove_env, modify_menu
 
@@ -24,8 +25,9 @@ def main(args):
         "version": args.version,
         "name": args.name,
         "username": "devuser",
-        "user_uid": str(os.getuid()),
-        "user_gid": str(os.getgid()),
+        # mac behaves differently than linux, use standard 1000 for mac
+        "user_uid": str(os.getuid()) if sys.platform != "darwin" else "1000",
+        "user_gid": str(os.getgid()) if sys.platform != "darwin" else "1000",
     }
 
     for file in Config.paths.template_dir.iterdir():

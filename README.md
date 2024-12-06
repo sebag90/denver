@@ -63,5 +63,17 @@ denver config -e <myproject> {requirements, env, dockerfile, compose}
 denver rebuild <myproject>
 ```
 
+# Notes  
+## Mac OS
+Host networking is supported on Docker Desktop version 4.34 and later. To enable this feature:
+
+* Sign in to your Docker account in Docker Desktop.
+* Navigate to Settings.
+* Under the Resources tab, select Network.
+* Check the Enable host networking option.
+* Select Apply and restart.
+
+See also this [link](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)
+
 # Copyright
 `assets/logo.svg` & `assets/mark.svg` Copyright © 2024 [Matteo Pranzetti](https://www.instagram.com/matteoprnzt/profilecard/?igsh=MXZud3AzcWNxYnRyZQ==). All Rights Reserved.
