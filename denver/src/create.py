@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from string import Template
 import sys
 
 from .utils import Config, remove_env, modify_menu
@@ -30,11 +31,12 @@ def main(args):
         "user_gid": str(os.getgid()) if sys.platform != "darwin" else "1000",
     }
 
+    to_template = {"docker-compose.yml"}
+
     for file in Config.paths.template_dir.iterdir():
-        templated_file = file.read_text(encoding="utf-8")
-        for var, value in template_vars.items():
-            to_replace = "{{" + var + "}}"
-            templated_file = templated_file.replace(to_replace, value)
+        file_content = file.read_text(encoding="utf-8")
+        if file.name in to_template:
+            file_content = Template(file_content).substitute(template_vars)
 
         # hide .bashrc and .env
         if file.name in {"bashrc", "env"}:
@@ -42,7 +44,7 @@ def main(args):
         else:
             file_name = file.name
 
-        Path(f"{new_env_dir}/{file_name}").write_text(templated_file, encoding="utf-8")
+        Path(f"{new_env_dir}/{file_name}").write_text(file_content, encoding="utf-8")
 
     if args.interactive is True:
         modify_menu(new_env_dir)
