@@ -24,12 +24,9 @@ RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
 
 RUN chown -R $USERNAME:$USERNAME /$WORK_DIR
 
+RUN ln -s /$WORK_DIR /root/
 USER $USERNAME
-
-# install VSCode + extensions
-RUN curl -fsSL https://code-server.dev/install.sh | sh
-RUN code-server --install-extension redhat.vscode-yaml \
-                --install-extension ms-python.python
+RUN ln -s /$WORK_DIR ${HOME}/
 
 # update and install pip dependencies
 RUN pip install --upgrade pip
