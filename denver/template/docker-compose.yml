@@ -1,5 +1,5 @@
 services:
-  denver_{{name}}:
+  denver_${name}:
     container_name: denver_${name}
     build:
       context: .
@@ -9,8 +9,9 @@ services:
         USERNAME: ${username}
         USER_UID: ${user_uid}
         USER_GID: ${user_gid}
+        WORK_DIR: ${work_dir}
     volumes:
-      - $${PWD}:/app
+      - $${PWD}:/${work_dir}
     command: tail -f /dev/null
     stdin_open: true
     env_file: ".env"

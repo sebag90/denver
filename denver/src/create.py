@@ -26,6 +26,7 @@ def main(args):
         "version": args.version,
         "name": args.name,
         "username": "devuser",
+        "work_dir": Config.get_config()["containers"]["work_dir"],
         # mac behaves differently than linux, use standard 1000 for mac
         "user_uid": str(os.getuid()) if sys.platform != "darwin" else "1000",
         "user_gid": str(os.getgid()) if sys.platform != "darwin" else "1000",
