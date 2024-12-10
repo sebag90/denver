@@ -41,12 +41,14 @@ def get_args():
     # REMOVE
     remove = subparsers.add_parser("remove", help="remove an environment")
     group = remove.add_mutually_exclusive_group()
-    group.add_argument("name", help="the name of the environment", nargs="?")
+    group.add_argument(
+        "name", help="the name of the environment", nargs="*", default=None
+    )
     group.add_argument("--all", action="store_true", help="delete all environments")
 
     # STOP
     stop = subparsers.add_parser("stop", help="stop the container of an environment")
-    stop.add_argument("name", help="the name of the environment")
+    stop.add_argument("name", help="the name of the environment", nargs="+")
 
     # CONFIG
     config = subparsers.add_parser(
