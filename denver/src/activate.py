@@ -1,7 +1,7 @@
 from pathlib import Path
 import subprocess
 
-from .utils import Config
+from .utils import Config, cprint
 
 
 ROOT = Path(__file__).parent.parent.resolve()
@@ -10,7 +10,7 @@ ROOT = Path(__file__).parent.parent.resolve()
 def main(args):
     compose_file = Path(f"{Config.paths.base_dir}/{args.name}/docker-compose.yml")
     if not compose_file.exists():
-        print(f"Environment {args.name} is missing, create it first")
+        cprint(f"Environment {args.name} is missing, create it first", "fail")
         return 1
 
     running_containers = subprocess.run(

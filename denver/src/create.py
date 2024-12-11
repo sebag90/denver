@@ -3,7 +3,7 @@ from pathlib import Path
 from string import Template
 import sys
 
-from .utils import Config, remove_env, modify_menu
+from .utils import Config, remove_env, modify_menu, cprint
 
 
 def main(args):
@@ -11,9 +11,10 @@ def main(args):
     new_env_dir = Path(f"{Config.paths.base_dir}/{args.name}")
 
     if new_env_dir.exists():
-        user_input = input(
-            f"{args.name} exists already, do you want to replace it? [y/n]\n> "
+        cprint(
+            f"{args.name} exists already, do you want to replace it? [y/n]", "warning"
         )
+        user_input = input("> ")
         if user_input.lower().strip() != "y":
             return 1
 
@@ -50,5 +51,5 @@ def main(args):
     if args.interactive is True:
         modify_menu(new_env_dir)
 
-    print(f"Environment {args.name} was created")
+    cprint(f"Environment {args.name} was created", "success")
     return 0

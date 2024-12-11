@@ -1,6 +1,6 @@
 import subprocess
 
-from .utils import Config
+from .utils import Config, cprint
 
 
 def main(args):
@@ -17,7 +17,7 @@ def main(args):
 
     for env_dir in sorted(Config.paths.base_dir.iterdir()):
         if env_dir.is_dir():
-            prefix = "*" if f"denver_{env_dir.stem}" in running_containers else "-"
-            print(f"{prefix} {env_dir.stem}")
+            color = "green" if f"denver_{env_dir.stem}" in running_containers else None
+            cprint(f"* {env_dir.stem}", color)
 
     return 0

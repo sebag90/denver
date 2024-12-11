@@ -1,19 +1,19 @@
-from .utils import Config, remove_env
+from .utils import Config, remove_env, cprint
 
 
 def main(args):
     envs = [file.stem for file in Config.paths.base_dir.iterdir() if file.is_dir()]
     if len(envs) == 0:
-        print("You have no environments")
+        cprint("You have no environments", "fail")
         return 1
 
     if args.all is False:
         for env_name in args.name:
             if env_name not in envs:
-                print(f"Environment {env_name} not found")
+                cprint(f"Environment {env_name} not found", "fail")
             else:
                 remove_env(env_name)
-                print(f"Environment {env_name} removed")
+                cprint(f"Environment {env_name} removed", "success")
 
         return 0
 
@@ -21,6 +21,6 @@ def main(args):
         for file in Config.paths.base_dir.iterdir():
             if file.is_dir():
                 remove_env(file.stem)
-                print(f"Environment {file.stem} removed")
+                cprint(f"Environment {file.stem} removed", "success")
 
         return 0

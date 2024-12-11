@@ -40,11 +40,17 @@ def get_args():
 
     # REMOVE
     remove = subparsers.add_parser("remove", help="remove an environment")
-    group = remove.add_mutually_exclusive_group()
-    group.add_argument(
-        "name", help="the name of the environment", nargs="*", default=None
+    remove.add_argument(
+        "name",
+        help="the name of the environment (can not be used in combination with --all)",
+        nargs="*",
+        default=None,
     )
-    group.add_argument("--all", action="store_true", help="delete all environments")
+    remove.add_argument(
+        "--all",
+        action="store_true",
+        help="delete all environments (can not be used in combination with named environment)",
+    )
 
     # STOP
     stop = subparsers.add_parser("stop", help="stop the container of an environment")
@@ -57,12 +63,26 @@ def get_args():
     config.add_argument("name", help="the name of the environment", nargs="?")
 
     args = parser.parse_args()
-    if args.subparser not in subparsers.choices.keys():
-        parser.print_help()
 
-    if args.subparser == "remove":
-        if args.name is None and args.all is False:
-            remove.print_help()
-            sys.exit()
+    def allowed_combination():
+        if args.subparser not in subparsers.choices.keys():
+            parser.print_help()
+            return False
+
+        if args.subparser == "remove":
+            # no named env, no --all
+            if not args.name and args.all is False:
+                remove.print_help()
+                return False
+
+            # both named env and --all
+            if args.name and args.all is True:
+                remove.print_help()
+                return False
+
+        return True
+
+    if allowed_combination() is False:
+        sys.exit()
 
     return args
