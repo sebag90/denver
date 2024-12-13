@@ -10,6 +10,25 @@ from pick import pick
 ROOT = Path(__file__).parent.parent.resolve()
 
 
+class ContainerTool:
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def exec(self):
+        return which(self.name)
+
+    @property
+    def compose(self):
+        if self.name == "docker":
+            return f"{self.exec} compose"
+
+        return which(f"{self.name}-compose")
+
+
 class Config:
     class paths:
         config_file = Path(f"{Path().home()}/.denver/config.ini")
@@ -45,12 +64,9 @@ class Config:
 
         # choose container tool
         available = []
-        for container_program in [
-            ("docker", "docker compose"),
-            ("podman", "podman-compose"),
-        ]:
-            if which(container_program[0]) is not None:
-                available.append(container_program)
+        for tool in [ContainerTool("docker"), ContainerTool("podman")]:
+            if tool.exec is not None:
+                available.append(tool)
 
         if len(available) > 1:
             container_tool, index = pick(
@@ -62,12 +78,13 @@ class Config:
             index = 0
 
         if len(available) > 0:
-            container_name, compose_name = available[index]
-            container_exec = which(container_name)
-            compose_exec = which(compose_name)
+            tool = available[index]
+            container_exec = tool.exec
+            compose_exec = tool.compose
+
         else:
             cprint(
-                message="No found to manage containers, youu must set it in config before using denver",
+                message="No tool found to manage containers. Update the config before using denver",
                 color="warning",
             )
             container_exec = None
