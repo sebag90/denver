@@ -43,12 +43,46 @@ class Config:
 
         editor_path = which(editor_name)
 
+        # choose container tool
+        available = []
+        for container_program in [
+            ("docker", "docker compose"),
+            ("podman", "podman-compose"),
+        ]:
+            if which(container_program[0]) is not None:
+                available.append(container_program)
+
+        if len(available) > 1:
+            container_tool, index = pick(
+                [i[0] for i in available],
+                "Which tool would you like to use to manage containers?",
+                indicator=">",
+            )
+        else:
+            index = 0
+
+        if len(available) > 0:
+            container_name, compose_name = available[index]
+            container_exec = which(container_name)
+            compose_exec = which(compose_name)
+        else:
+            cprint(
+                message="No found to manage containers, youu must set it in config before using denver",
+                color="warning",
+            )
+            container_exec = None
+            compose_exec = None
+
         # create config
         config = ConfigParser()
         config["general"] = {
             "editor": str(editor_path),
         }
-        config["containers"] = {"work_dir": "workspace"}
+        config["containers"] = {
+            "work_dir": "workspace",
+            "container_tool": container_exec,
+            "compose_tool": compose_exec,
+        }
 
         with Config.paths.config_file.open("w", encoding="utf-8") as ofile:
             config.write(ofile)
@@ -88,15 +122,9 @@ def docker_compose(name, action):
     env_dir = Path(f"{Config.paths.base_dir}/{name}")
 
     if env_dir.exists():
-        subprocess.run(
-            [
-                "docker",
-                "compose",
-                "-f",
-                Path(f"{env_dir}/docker-compose.yml"),
-                action,
-            ]
-        )
+        compose_tool = Config.get_config()["containers"]["compose_tool"].split()
+        args = ["-f", Path(f"{env_dir}/docker-compose.yml"), action]
+        subprocess.run(compose_tool + args)
 
 
 def remove_env(name):
@@ -105,7 +133,9 @@ def remove_env(name):
     if env_dir.exists():
         docker_compose(name, "down")
 
-    subprocess.run(["docker", "image", "rm", f"{name}-denver_{name}"])
+    container_tool = Config.get_config()["containers"]["container_tool"].split()
+    args = ["image", "rm", f"{name}-denver_{name}"]
+    subprocess.run(container_tool + args)
 
     if env_dir.exists():
         rm_tree(env_dir)

@@ -7,10 +7,11 @@ def main(args):
     if not Config.paths.base_dir.exists():
         return 0
 
+    container_tool = Config.get_config()["containers"]["container_tool"].split()
+    container_args = ["ps", "--format", "{{.Names}}"]
+
     running_containers = set(
-        subprocess.run(
-            ["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True
-        )
+        subprocess.run(container_tool + container_args, capture_output=True, text=True)
         .stdout.strip()
         .split()
     )
