@@ -9,6 +9,7 @@ def main(args):
             cprint(f"Environment {env_name} is missing, create it first", "fail")
 
         else:
+            cprint(f"Stopping container {env_name}...", "warning")
             docker_compose(env_name, "down")
             cprint(f"Environment {env_name} stopped", "success")
 

@@ -22,16 +22,14 @@ def get_args():
         help="modify environment files upon creation",
     )
 
-    # REBUILD
-    rebuild = subparsers.add_parser("rebuild", help="rebuild an environment from image")
-    rebuild.add_argument("name", help="the name of the environment")
+    # BUILD
+    build = subparsers.add_parser("build", help="build an environment from image")
+    build.add_argument("name", help="the name of the environment")
 
     # ACTIVATE
-    activate = subparsers.add_parser(
-        "activate", help="activate the shell of an environment"
-    )
-    activate.add_argument("name", help="the name of the environment")
-    activate.add_argument(
+    shell = subparsers.add_parser("shell", help="activate the shell of an environment")
+    shell.add_argument("name", help="the name of the environment")
+    shell.add_argument(
         "-r",
         "--root",
         action="store_true",
@@ -61,6 +59,20 @@ def get_args():
         "config", help="modify the configuration of an environment or denver itself"
     )
     config.add_argument("name", help="the name of the environment", nargs="?")
+
+    # RUN
+    run = subparsers.add_parser(
+        "run", help="run a command using the selected environment"
+    )
+    run.add_argument(
+        "--environment", "-e", help="the enviroonment to use", required=True
+    )
+    run.add_argument(
+        "--detach",
+        "-d",
+        help="detach the command from the current shell",
+    )
+    run.add_argument("command", help="the command you want to execute", nargs="*")
 
     args = parser.parse_args()
 

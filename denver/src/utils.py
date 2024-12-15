@@ -36,11 +36,16 @@ class Config:
         base_dir = Path(f"{Path().home()}/.denver")
         base_dir.mkdir(exist_ok=True, parents=True)
 
+    class templates:
+        image_name = "denver/{env_name}"
+        container_name = "denver_{env_name}"
+
     def get_config():
         Config.create_config()
 
         config = ConfigParser()
         config.read(Config.paths.config_file)
+
         return config
 
     def create_config():
@@ -48,7 +53,8 @@ class Config:
             return
 
         editor_name = os.getenv("EDITOR")
-        if editor_name is None or which(editor_name) is not None:
+
+        if editor_name is None or which(editor_name) is None:
             while True:
                 user_input = input(
                     "No editor found in your environment, enter your preferred editor\n> "
@@ -68,14 +74,13 @@ class Config:
             if tool.exec is not None:
                 available.append(tool)
 
+        index = 0
         if len(available) > 1:
             container_tool, index = pick(
-                [i[0] for i in available],
+                [i for i in available],
                 "Which tool would you like to use to manage containers?",
                 indicator=">",
             )
-        else:
-            index = 0
 
         if len(available) > 0:
             tool = available[index]
@@ -84,7 +89,7 @@ class Config:
 
         else:
             cprint(
-                message="No tool found to manage containers. Update the config before using denver",
+                message="No tool found to manage containers. Install podman or docker and update the config file",
                 color="warning",
             )
             container_exec = None
@@ -108,8 +113,8 @@ class Config:
 class Colors:
     header = "\033[95m"
     blue = "\033[94m"
-    success = "\033[96m"
-    green = "\033[92m"
+    success = "\033[92m"
+    cyan = "\033[96m"
     warning = "\033[93m"
     fail = "\033[91m"
     eos = "\033[0m"
@@ -145,13 +150,16 @@ def docker_compose(name, action):
 
 
 def remove_env(name):
+    config = Config.get_config()
     env_dir = Path(f"{Config.paths.base_dir}/{name}")
 
     if env_dir.exists():
+        cprint(f"Stopping container {name}...", "warning")
         docker_compose(name, "down")
 
-    container_tool = Config.get_config()["containers"]["container_tool"].split()
-    args = ["image", "rm", f"{name}-denver_{name}"]
+    container_tool = config["containers"]["container_tool"].split()
+    image_name = Config.templates.image_name.format(env_name=name)
+    args = ["image", "rm", image_name]
     subprocess.run(container_tool + args)
 
     if env_dir.exists():
