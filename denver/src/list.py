@@ -23,7 +23,7 @@ def main(args):
             container_name = Config.templates.container_name.format(
                 env_name=env_dir.stem
             )
-            color = "green" if container_name in running_containers else None
+            color = "GREEN" if container_name in running_containers else None
             cprint(f"* {env_dir.stem}", color)
 
     return 0

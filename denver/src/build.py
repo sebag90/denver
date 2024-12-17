@@ -7,7 +7,7 @@ def main(args):
     config = Config.get_config()
     # remove old image
     docker_compose(args.name, "down")
-    cprint(f"Environment {args.name} stopped", "warning")
+    cprint(f"Environment {args.name} stopped", "WARNING")
     container_tool = config["containers"]["container_tool"].split()
     image_name = Config.templates.image_name.format(env_name=args.name)
 
@@ -16,5 +16,5 @@ def main(args):
 
     # rebuild image
     docker_compose(args.name, "build")
-    cprint(f"Environment {args.name} was built", "success")
+    cprint(f"Environment {args.name} was built", "SUCCESS")
     return 0

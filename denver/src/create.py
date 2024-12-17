@@ -12,7 +12,8 @@ def main(args):
 
     if new_env_dir.exists():
         cprint(
-            f"{args.name} exists already, do you want to replace it? [y/n]", "warning"
+            f"{args.name} exists already, do you want to replace it? [y/n]",
+            color="WARNING",
         )
         user_input = input("> ")
         if user_input.lower().strip() != "y":
@@ -51,5 +52,5 @@ def main(args):
     if args.interactive is True:
         modify_menu(new_env_dir)
 
-    cprint(f"Environment {args.name} was created", "success")
+    cprint(f"Environment {args.name} was created", "SUCCESS")
     return 0

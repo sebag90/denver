@@ -12,7 +12,7 @@ services:
         WORK_DIR: ${work_dir}
     image: denver/${name}
     volumes:
-      - $${PWD}:/${work_dir}:z
+      - $${PWD}:/${work_dir}:Z
     command: tail -f /dev/null
     stdin_open: true
     env_file: ".env"

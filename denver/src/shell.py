@@ -12,7 +12,7 @@ def main(args):
 
     compose_file = Path(f"{Config.paths.base_dir}/{args.name}/docker-compose.yml")
     if not compose_file.exists():
-        cprint(f"Environment {args.name} is missing, create it first", "fail")
+        cprint(f"Environment {args.name} is missing, create it first", "FAIL")
         return 1
 
     container_tool = config["containers"]["container_tool"].split()
@@ -32,7 +32,7 @@ def main(args):
     command_args_init = container_tool + ["exec", "-it"]
     container_args = [container_name, "bash"]
 
-    if args.root is True:
+    if args.root is True or "podman" in container_tool:
         container_args = ["-u", "0:0"] + container_args
 
     subprocess.run(command_args_init + container_args)

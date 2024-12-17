@@ -90,7 +90,7 @@ class Config:
         else:
             cprint(
                 message="No tool found to manage containers. Install podman or docker and update the config file",
-                color="warning",
+                color="WARNING",
             )
             container_exec = None
             compose_exec = None
@@ -111,15 +111,21 @@ class Config:
 
 
 class Colors:
-    header = "\033[95m"
-    blue = "\033[94m"
-    success = "\033[92m"
-    cyan = "\033[96m"
-    warning = "\033[93m"
-    fail = "\033[91m"
-    eos = "\033[0m"
-    bold = "\033[1m"
-    underline = "\033[4m"
+    PURPLE = "\033[95m"
+    CYAN = "\033[96m"
+    DARKCYAN = "\033[36m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    END = "\033[0m"
+
+    def __init__(self):
+        self.SUCCESS = self.GREEN
+        self.WARNING = self.YELLOW
+        self.FAIL = self.RED
 
 
 def cprint(message, color):
@@ -127,8 +133,9 @@ def cprint(message, color):
         print(message)
         return
 
-    color = getattr(Colors, color)
-    print(f"{color}{message}{Colors.eos}")
+    colors = Colors()
+    color = getattr(colors, color)
+    print(f"{color}{message}{Colors.END}")
 
 
 def rm_tree(pth):
@@ -154,7 +161,7 @@ def remove_env(name):
     env_dir = Path(f"{Config.paths.base_dir}/{name}")
 
     if env_dir.exists():
-        cprint(f"Stopping container {name}...", "warning")
+        cprint(f"Stopping container {name}...", "WARNING")
         docker_compose(name, "down")
 
     container_tool = config["containers"]["container_tool"].split()

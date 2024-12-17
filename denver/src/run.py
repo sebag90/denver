@@ -19,7 +19,7 @@ def main(args):
     image_name = Config.templates.image_name.format(env_name=args.environment)
 
     if image_name not in active_images:
-        cprint(f"Image for {args.environment} is missing, build it first", "fail")
+        cprint(f"Image for {args.environment} is missing, build it first", "FAIL")
         return 1
 
     executable, *run_args = args.command

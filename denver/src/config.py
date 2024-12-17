@@ -9,7 +9,7 @@ def main(args):
         return 0
 
     if not Path(f"{Config.paths.base_dir}/{args.name}").exists():
-        cprint(f"Environment {args.name} is missing, create it first", "fail")
+        cprint(f"Environment {args.name} is missing, create it first", "FAIL")
         return 1
 
     modify_menu(Path(f"{Config.paths.base_dir}/{args.name}"))
