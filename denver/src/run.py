@@ -28,8 +28,11 @@ def main(args):
         "run",
         "-it",
         "-v",
-        f"{Path().resolve()}:/workspace",
+        f"{Path().resolve()}:/workspace:Z",
     ]
+
+    if "podman" in container_tool:
+        container_args_1.extend(["-u", "0:0"])
 
     container_args_2 = ["--entrypoint", executable, image_name] + run_args
 
