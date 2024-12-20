@@ -1,22 +1,11 @@
-import subprocess
-
-from .utils import Config, cprint
+from .utils import Config, cprint, get_running_containers
 
 
 def main(args):
     if not Config.paths.base_dir.exists():
         return 0
 
-    config = Config.get_config()
-
-    container_tool = config["containers"]["container_tool"].split()
-    container_args = ["ps", "--format", "{{.Names}}"]
-
-    running_containers = set(
-        subprocess.run(container_tool + container_args, capture_output=True, text=True)
-        .stdout.strip()
-        .split()
-    )
+    running_containers = get_running_containers()
 
     for env_dir in sorted(Config.paths.base_dir.iterdir()):
         if env_dir.is_dir():

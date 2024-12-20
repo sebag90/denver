@@ -72,9 +72,28 @@ def get_args():
         "-d",
         help="detach the command from the current shell",
     )
-    run.add_argument("command", help="the command you want to execute", nargs="*")
+    run.add_argument(
+        "command", help="the command you want to execute", nargs="+", type=str
+    )
 
-    args = parser.parse_args()
+    # UPDATE
+    update = subparsers.add_parser(
+        "update",
+        help="update the image of an environment based on the curent state of a running container",
+    )
+    update.add_argument(
+        "name",
+        help="the name of the environment",
+    )
+
+    args, unknown = parser.parse_known_args()
+
+    # workaround argparse limitation
+    if args.subparser == "run":
+        args.command += unknown
+
+    else:
+        args = parser.parse_args()
 
     def allowed_combination():
         if args.subparser not in subparsers.choices.keys():

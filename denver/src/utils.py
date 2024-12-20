@@ -189,3 +189,20 @@ def modify_menu(env_base_dir):
             return
 
         modify_single_file(f"{env_base_dir}/{option}")
+
+
+def get_running_containers():
+    config = Config.get_config()
+
+    container_args = [
+        config["containers"]["container_tool"],
+        "ps",
+        "--format",
+        "{{.Names}}",
+    ]
+
+    return set(
+        subprocess.run(container_args, capture_output=True, text=True)
+        .stdout.strip()
+        .split()
+    )
