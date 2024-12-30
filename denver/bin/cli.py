@@ -70,6 +70,7 @@ def get_args():
     run.add_argument(
         "--detach",
         "-d",
+        action="store_true",
         help="detach the command from the current shell",
     )
     run.add_argument(
