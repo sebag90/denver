@@ -9,7 +9,9 @@ def get_args():
     subparsers = parser.add_subparsers(dest="subparser")
 
     # SIMPLE SUBPARSERS
-    subparsers.add_parser("list", help="list all available environments")
+    subparsers.add_parser(
+        "list", aliases=["ps", "ls"], help="list all available environments"
+    )
 
     # CREATE ENV
     create = subparsers.add_parser("create", help="create a new environment")
@@ -37,7 +39,9 @@ def get_args():
     )
 
     # REMOVE
-    remove = subparsers.add_parser("remove", help="remove an environment")
+    remove = subparsers.add_parser(
+        "remove", aliases=["rm"], help="remove an environment"
+    )
     remove.add_argument(
         "name",
         help="the name of the environment (can not be used in combination with --all)",
