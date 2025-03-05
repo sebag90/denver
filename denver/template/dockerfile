@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 ARG WORK_DIR
 RUN mkdir -p /$WORK_DIR
 RUN apt update \
-    && apt-get install -y sudo gcc git micro curl
+    && apt-get install -y sudo gcc git micro curl pipx
 
 # create a devuser
 ARG USERNAME
@@ -27,6 +27,8 @@ RUN chown -R $USERNAME:$USERNAME /$WORK_DIR
 RUN ln -s /$WORK_DIR /root/
 USER $USERNAME
 RUN ln -s /$WORK_DIR ${HOME}/
+
+RUN pipx install rust-just
 
 # update and install pip dependencies
 RUN pip install --upgrade pip
