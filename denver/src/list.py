@@ -13,6 +13,6 @@ def main(args):
                 env_name=env_dir.stem
             )
             color = "GREEN" if container_name in running_containers else None
-            cprint(f"* {env_dir.stem}", color)
+            cprint(f"- {env_dir.stem}", color)
 
     return 0
