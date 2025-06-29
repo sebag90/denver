@@ -31,9 +31,9 @@ class ContainerTool:
 
 class Config:
     class paths:
-        config_file = Path(f"{Path().home()}/.denver/config.ini")
         template_dir = Path(f"{ROOT}/template")
-        base_dir = Path(f"{Path().home()}/.denver")
+        base_dir = Path(f"{Path().home()}/.config/denver")
+        config_file = Path(base_dir / "config.ini")
         base_dir.mkdir(exist_ok=True, parents=True)
 
     class templates:

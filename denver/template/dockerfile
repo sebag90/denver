@@ -1,44 +1,41 @@
 ARG VERSION
-FROM python:${VERSION}
+FROM python:${VERSION}-slim as builder
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
+COPY requirements.txt requirements.txt
+RUN uv pip install --system -r requirements.txt
 
-# Turns off buffering for easier container logging
-ENV PYTHONUNBUFFERED=1
-
-ARG WORK_DIR
-RUN mkdir -p /$WORK_DIR
 RUN apt update \
-    && apt-get install -y sudo gcc git micro curl pipx
+    && apt install -y pipx \
+    && pipx ensurepath
+
+RUN pipx install rust-just
+
+
+FROM python:${VERSION}-slim
+# copy python installation
+COPY --from=builder /usr/local/ /usr/local/
+
+# add developers tools
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=builder /root/.local/bin/just /bin/
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 # create a devuser
 ARG USERNAME
 ARG USER_GID
 ARG USER_UID
+ARG WORK_DIR
 
-RUN groupadd --gid $USER_GID $USERNAME && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+RUN mkdir -p /$WORK_DIR
+RUN useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
 
-RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
-    chmod 0440 /etc/sudoers.d/$USERNAME
-
-RUN chown -R $USERNAME:$USERNAME /$WORK_DIR
-
-RUN ln -s /$WORK_DIR /root/
 USER $USERNAME
 RUN ln -s /$WORK_DIR ${HOME}/
 
-RUN pipx install rust-just
-
-# update and install pip dependencies
-RUN pip install --upgrade pip
-COPY requirements.txt /tmp/requirements.txt
-RUN sudo mv /tmp/requirements.txt ${HOME}/requirements.txt
-RUN pip install -r ${HOME}/requirements.txt
-
 # copy bashrc
-COPY .bashrc /tmp/.bashrc
-RUN sudo cp /tmp/.bashrc ${HOME}/.bashrc
-RUN sudo mv /tmp/.bashrc /root/.bashrc
+COPY .bashrc ${HOME}/.bashrc
+COPY .bashrc /root/.bashrc
 
 WORKDIR /$WORK_DIR

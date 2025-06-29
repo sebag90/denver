@@ -16,7 +16,7 @@ def get_args():
     # CREATE ENV
     create = subparsers.add_parser("create", help="create a new environment")
     create.add_argument("name", help="the name of the environment")
-    create.add_argument("--version", "-v", default="3.12", type=str)
+    create.add_argument("--version", "-v", default="3.13", type=str)
     create.add_argument(
         "-i",
         "--interactive",
