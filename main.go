@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -34,6 +36,34 @@ type PullProgress struct {
 		Current int64 `json:"current"`
 		Total   int64 `json:"total"`
 	} `json:"progressDetail"`
+}
+
+func getRunningContainer(client *http.Client) string {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		baseApiUrl+"/containers/json",
+		nil,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		panic(fmt.Sprintf("Podman returned %s", resp.Status))
+	}
+
+	var containers []Container
+	if err := json.NewDecoder(resp.Body).Decode(&containers); err != nil {
+		panic(err)
+	}
+
+	return containers[0].ID
 }
 
 func listContainers(client *http.Client) {
@@ -116,9 +146,63 @@ func downloadImage(client *http.Client, image string) {
 		)
 	}
 }
+
+func createContainer(client *http.Client, imageName string) {
+	payload := map[string]any{
+		"Image":     imageName,
+		"Env":       []string{"FOO=bar", "CIAO=123"},
+		"Tty":       true,
+		"OpenStdin": true,
+		"ExposedPorts": map[string]any{
+			"22/tcp": map[string]any{},
+		},
+		"HostConfig": map[string]any{
+			"PortBindings": map[string]any{
+				"22/tcp": []map[string]string{
+					{
+						"HostIp":   "127.0.0.1",
+						"HostPort": "2222",
+					},
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		baseApiUrl+"/containers/create",
+		bytes.NewReader(jsonData),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	q := req.URL.Query()
+	q.Set("name", "ciao")
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		log.Fatalf("Podman create error: %s: %s", resp.Status, body)
+	}
+}
+
 func main() {
-	socket := "/run/podman/podman.sock" // + "/podman/podman.sock"
-	// socket := os.Getenv("XDG_RUNTIME_DIR") + "/podman/podman.sock"
+	// socket := "/run/podman/podman.sock" // + "/podman/podman.sock"
+	socket := os.Getenv("XDG_RUNTIME_DIR") + "/podman/podman.sock"
 	client := &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -131,6 +215,13 @@ func main() {
 		Timeout: 10 * time.Second,
 	}
 
+	fmt.Println("Running Containers")
 	listContainers(client)
-	downloadImage(client, defaultImage)
+	// downloadImage(client, defaultImage)
+	// createContainer(client, defaultImage)
+	available := getRunningContainer(client)
+
+	fmt.Println("Attaching to container: " + available)
+	// attachToContainerHijack(socket, available)
+	execInContainer(client, socket, available, []string{"fish"})
 }
