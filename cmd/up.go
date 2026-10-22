@@ -28,7 +28,8 @@ func up(cmd *cobra.Command, args []string) {
 		},
 		Timeout: 10 * time.Second,
 	}
-	container.CreateContainer(client, "ghcr.io/sebag90/devenv")
+	containerId := container.CreateContainer(client, "ghcr.io/sebag90/devenv")
+	container.StartContainer(client, containerId)
 }
 
 // upCmd represents the up command

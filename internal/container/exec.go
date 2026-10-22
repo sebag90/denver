@@ -118,6 +118,13 @@ func startExecHijack(socketPath, execId string) error {
 		return fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 
+	// 4b. Give the exec PTY our real window size, and keep it in sync.
+	resizeClient := newSocketClient(socketPath)
+	stopResize := watchWindowSize(func(width, height int) error {
+		return resizeExec(resizeClient, execId, width, height)
+	})
+	defer stopResize()
+
 	// 5. Raw mode on host terminal
 	stdinFd := int(os.Stdin.Fd())
 	if term.IsTerminal(stdinFd) {

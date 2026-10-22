@@ -1,16 +1,15 @@
 package container
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
-	"time"
+	"strconv"
 )
 
 type Container struct {
@@ -65,7 +64,7 @@ func getRunningContainer(client *http.Client) string {
 	return containers[0].ID
 }
 
-func ListContainers(client *http.Client) {
+func ListContainers(client *http.Client, name string) string {
 	req, err := http.NewRequest(
 		http.MethodGet,
 		baseApiUrl+"/containers/json",
@@ -75,6 +74,14 @@ func ListContainers(client *http.Client) {
 		panic(err)
 	}
 
+	q := req.URL.Query()
+	filters, err := json.Marshal(map[string][]string{"name": {name}})
+	if err != nil {
+		panic(err)
+	}
+	q.Set("filters", string(filters))
+	req.URL.RawQuery = q.Encode()
+
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
@@ -82,7 +89,8 @@ func ListContainers(client *http.Client) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Sprintf("Podman returned %s", resp.Status))
+		body, _ := io.ReadAll(resp.Body)
+		panic(fmt.Sprintf("Podman returned %s: %s", resp.Status, body))
 	}
 
 	var containers []Container
@@ -98,6 +106,21 @@ func ListContainers(client *http.Client) {
 			c.State,
 		)
 	}
+	return containers[0].ID
+}
+
+func hash(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return strconv.FormatUint(uint64(h.Sum32()), 10)
+}
+
+func NameContainer() string {
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	return fmt.Sprintf("denver.%s", hash(path))
 }
 
 func downloadImage(client *http.Client, image string) {
@@ -144,30 +167,4 @@ func downloadImage(client *http.Client, image string) {
 			progress.Progress,
 		)
 	}
-}
-
-func testrun() {
-	// socket := "/run/podman/podman.sock" // + "/podman/podman.sock"
-	socket := os.Getenv("XDG_RUNTIME_DIR") + "/podman/podman.sock"
-	client := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return net.DialUnix("unix", nil, &net.UnixAddr{
-					Net:  "unix",
-					Name: socket,
-				})
-			},
-		},
-		Timeout: 10 * time.Second,
-	}
-
-	fmt.Println("Running Containers")
-	ListContainers(client)
-	// downloadImage(client, defaultImage)
-	// createContainer(client, defaultImage)
-	available := getRunningContainer(client)
-
-	fmt.Println("Attaching to container: " + available)
-	// attachToContainerHijack(socket, available)
-	execInContainer(client, socket, available, []string{"fish"})
 }

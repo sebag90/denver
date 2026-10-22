@@ -14,7 +14,7 @@ import (
 // attachToContainerHijack attaches to a container using HTTP connection hijacking.
 // Note: Named attachToContainerHijack to avoid symbol collision with the existing
 // attachToContainer function in main.go.
-func attachToContainerHijack(socketPath, containerId string) error {
+func AttachToContainerHijack(socketPath, containerId string) error {
 	// 1. Connect directly to the Podman/Docker unix socket
 	conn, err := net.Dial("unix", socketPath)
 	if err != nil {
@@ -48,6 +48,17 @@ func attachToContainerHijack(socketPath, containerId string) error {
 	if resp.StatusCode != http.StatusSwitchingProtocols { // HTTP 101
 		return fmt.Errorf("unexpected status: %s", resp.Status)
 	}
+
+	// The container's PTY is created with a default size (80x24). Without
+	// telling the daemon our real window size, full-screen programs and line
+	// wrapping use that default and the output only fills part of the screen.
+	// Resize now (before we start pumping output) so the shell gets SIGWINCH
+	// and redraws its prompt with the correct dimensions.
+	resizeClient := newSocketClient(socketPath)
+	stopResize := watchWindowSize(func(width, height int) error {
+		return resizeContainer(resizeClient, containerId, width, height)
+	})
+	defer stopResize()
 
 	// Put the terminal into raw mode so keystrokes are passed directly
 	// without local echo or line buffering.

@@ -3,12 +3,13 @@ package container
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 )
 
-func CreateContainer(client *http.Client, imageName string) {
+func CreateContainer(client *http.Client, imageName string) string {
 	payload := map[string]any{
 		"Image":      imageName,
 		"Env":        commonEnv,
@@ -33,8 +34,11 @@ func CreateContainer(client *http.Client, imageName string) {
 
 	req.Header.Set("Content-Type", "application/json")
 
+	name := NameContainer()
+	fmt.Println(name)
+
 	q := req.URL.Query()
-	q.Set("name", "ciao")
+	q.Set("name", NameContainer())
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)
@@ -47,4 +51,12 @@ func CreateContainer(client *http.Client, imageName string) {
 		body, _ := io.ReadAll(resp.Body)
 		log.Fatalf("Podman create error: %s: %s", resp.Status, body)
 	}
+
+	type Response struct {
+		ID string `json:"Id"`
+	}
+	var result Response
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	return result.ID
 }
