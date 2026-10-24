@@ -2,111 +2,119 @@ package container
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
+// Container is the subset of the /containers/json payload we care about.
 type Container struct {
-	ID     string   `json:"Id"`
-	Names  []string `json:"Names"`
-	Image  string   `json:"Image"`
-	State  string   `json:"State"`
-	Status string   `json:"Status"`
+	ID     string            `json:"Id"`
+	Names  []string          `json:"Names"`
+	Image  string            `json:"Image"`
+	State  string            `json:"State"`
+	Status string            `json:"Status"`
+	Labels map[string]string `json:"Labels"`
+}
+
+// Name returns the primary container name without its leading slash.
+func (c Container) Name() string {
+	if len(c.Names) == 0 {
+		return ""
+	}
+	return strings.TrimPrefix(c.Names[0], "/")
+}
+
+// Running reports whether the container is currently running.
+func (c Container) Running() bool {
+	return c.State == "running"
 }
 
 const (
-	apiVersion   = "1.54"
-	baseApiUrl   = "http://container/v" + apiVersion
-	defaultImage = "ghcr.io/sebag90/devenv:latest"
+	// preferredApiVersion is the newest API version dv is written against.
+	preferredApiVersion = "1.54"
+
+	// apiHost is ignored by the unix socket transport, but requests need a
+	// well formed URL to be built from.
+	apiHost = "http://container"
 )
 
-type PullProgress struct {
-	Status         string `json:"status"`
-	ID             string `json:"id"`
-	Progress       string `json:"progress"`
-	ProgressDetail struct {
-		Current int64 `json:"current"`
-		Total   int64 `json:"total"`
-	} `json:"progressDetail"`
+// apiVersion and baseApiUrl describe the API version in use for every
+// request. They start at the newest version dv knows and are lowered together
+// by NegotiateApiVersion when the daemon speaks something older.
+var (
+	apiVersion = preferredApiVersion
+	baseApiUrl = versionedUrl(apiVersion)
+)
+
+// versionedUrl renders the API root for one API version.
+func versionedUrl(version string) string {
+	return apiHost + "/v" + version
 }
 
-func getRunningContainer(client *http.Client) string {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		baseApiUrl+"/containers/json",
-		nil,
-	)
-	if err != nil {
-		panic(err)
+// ShortID trims a container ID to the 12 character form the CLIs use.
+func ShortID(id string) string {
+	if len(id) > 12 {
+		return id[:12]
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Sprintf("Podman returned %s", resp.Status))
-	}
-
-	var containers []Container
-	if err := json.NewDecoder(resp.Body).Decode(&containers); err != nil {
-		panic(err)
-	}
-
-	return containers[0].ID
+	return id
 }
 
-func ListContainers(client *http.Client, name string) string {
-	req, err := http.NewRequest(
-		http.MethodGet,
-		baseApiUrl+"/containers/json",
-		nil,
-	)
+// ListContainers returns every container whose name matches name. The daemon
+// treats the name filter as a substring match, so callers that need an exact
+// name should use FindContainer.
+func ListContainers(client *http.Client, name string) ([]Container, error) {
+	req, err := http.NewRequest(http.MethodGet, baseApiUrl+"/containers/json", nil)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("create list request: %w", err)
+	}
+
+	filters, err := json.Marshal(map[string][]string{"name": {name}})
+	if err != nil {
+		return nil, fmt.Errorf("marshal filters: %w", err)
 	}
 
 	q := req.URL.Query()
-	filters, err := json.Marshal(map[string][]string{"name": {name}})
-	if err != nil {
-		panic(err)
-	}
+	q.Set("all", "true")
 	q.Set("filters", string(filters))
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("list containers: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		panic(fmt.Sprintf("Podman returned %s: %s", resp.Status, body))
+		return nil, fmt.Errorf("list containers: %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 
 	var containers []Container
 	if err := json.NewDecoder(resp.Body).Decode(&containers); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("decode container list: %w", err)
+	}
+	return containers, nil
+}
+
+// FindContainer returns the container with exactly the given name, or nil when
+// no such container exists.
+func FindContainer(client *http.Client, name string) (*Container, error) {
+	containers, err := ListContainers(client, name)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, c := range containers {
-		fmt.Printf("%s %v %s %s\n",
-			c.ID[:12],
-			c.Names,
-			c.Image,
-			c.State,
-		)
+	for i := range containers {
+		if containers[i].Name() == name {
+			return &containers[i], nil
+		}
 	}
-	return containers[0].ID
+	return nil, nil
 }
 
 func hash(s string) string {
@@ -115,56 +123,12 @@ func hash(s string) string {
 	return strconv.FormatUint(uint64(h.Sum32()), 10)
 }
 
-func NameContainer() string {
+// ContainerName derives a stable container name from the current directory, so
+// every directory gets its own container.
+func ContainerName() string {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		fmt.Fprintf(os.Stderr, "dv: cannot determine working directory: %v\n", err)
 	}
 	return fmt.Sprintf("denver.%s", hash(path))
-}
-
-func downloadImage(client *http.Client, image string) {
-	req, err := http.NewRequest(
-		http.MethodPost,
-		baseApiUrl+"/images/create",
-		nil,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	q := req.URL.Query()
-	q.Set("fromImage", image)
-	req.URL.RawQuery = q.Encode()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		log.Fatalf("Docker error: %s: %s", resp.Status, body)
-	}
-
-	decoder := json.NewDecoder(resp.Body)
-
-	for {
-		var progress PullProgress
-
-		err := decoder.Decode(&progress)
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("%-20s %-30s %s\n",
-			progress.ID,
-			progress.Status,
-			progress.Progress,
-		)
-	}
 }

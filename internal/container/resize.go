@@ -1,10 +1,8 @@
 package container
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,18 +10,6 @@ import (
 
 	"golang.org/x/term"
 )
-
-// newSocketClient returns an http.Client that talks to the Podman/Docker unix socket.
-func newSocketClient(socketPath string) *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				var d net.Dialer
-				return d.DialContext(ctx, "unix", socketPath)
-			},
-		},
-	}
-}
 
 // resizeContainer resizes the container's TTY (TIOCSWINSZ under the hood).
 func resizeContainer(client *http.Client, containerId string, width, height int) error {

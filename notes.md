@@ -30,3 +30,35 @@ func createContainer(client *http.Client, isPodman bool, isRootless bool) {
    // ...
 }
 ```
+
+#### 3. Exposing the Engine Socket
+
+The container gets the daemon socket dv itself talks to (`SocketPath()`), mounted
+at the path the matching CLI expects:
+
+- Podman: `<socket>:/run/podman/podman.sock`
+- Docker: `<socket>:/var/run/docker.sock`
+
+with `CONTAINER_HOST` and `DOCKER_HOST` both pointing at it (the Podman CLI reads
+only the former, the Docker CLI only the latter). Nothing is mounted when the
+socket does not exist, so creating a container never fails because the daemon is
+unreachable. Containers started from inside the project container run on the host
+daemon, next to the project container itself (docker-outside-of-docker).
+
+The socket is mounted without `:Z` — relabeling it would relabel the host's
+runtime socket and break the host session — and it keeps the host's SELinux label
+(`user_tmp_t` under `$XDG_RUNTIME_DIR`). A container running as `container_t`
+with its own MCS category pair is not allowed to `connect()` to it, so any
+container that gets a socket bind (daemon socket or Wayland) is created with
+SELinux labeling disabled:
+
+- libpod: `"selinux_opts": ["disable"]`
+- Docker-compatible API: `HostConfig.SecurityOpt: ["label=disable"]`
+
+This is the same trade-off the original devcontainer shell made with
+`--security-opt label=disable`. Plain containers without a socket bind keep their
+confinement, and their file mounts are still relabeled with `:Z`.
+
+Mounting the socket is not enough on its own: the container user must be the
+socket's owner on the host. Rootless Podman gets that from `keep-id`; a rootful
+daemon whose socket is group-owned would need the user in that group too.

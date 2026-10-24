@@ -4,57 +4,39 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
-	"net"
-	"net/http"
-	"os"
-	"time"
+	"fmt"
 
 	"github.com/sebag90/denver/internal/container"
 	"github.com/spf13/cobra"
 )
 
-func up(cmd *cobra.Command, args []string) {
-	// socket := "/run/podman/podman.sock" // + "/podman/podman.sock"
-	socket := os.Getenv("XDG_RUNTIME_DIR") + "/podman/podman.sock"
-	client := &http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return net.DialUnix("unix", nil, &net.UnixAddr{
-					Net:  "unix",
-					Name: socket,
-				})
-			},
-		},
-		Timeout: 10 * time.Second,
+func up(cmd *cobra.Command, args []string) error {
+	client, _, err := connect()
+	if err != nil {
+		return err
 	}
-	containerId := container.CreateContainer(client, "ghcr.io/sebag90/devenv")
-	container.StartContainer(client, containerId)
+
+	id, err := container.EnsureContainer(client, imageFlag, sandboxFlag)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s is running (%s)\n", container.ContainerName(), container.ShortID(id))
+	return nil
 }
 
 // upCmd represents the up command
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create and start the container for the current directory",
+	Long: `up makes sure the container for the current directory exists and is running.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: up,
+It is idempotent: a container that is already running is reused, a stopped one
+is started again.`,
+	Args: cobra.NoArgs,
+	RunE: up,
 }
 
 func init() {
 	rootCmd.AddCommand(upCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// upCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// upCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

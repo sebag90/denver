@@ -1,49 +1,58 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
+	"fmt"
+	"net/http"
 	"os"
 
+	"github.com/sebag90/denver/internal/container"
 	"github.com/spf13/cobra"
 )
 
+// imageFlag is shared by every command that can create a container.
+var imageFlag string
 
+// sandboxFlag starts containers without bind-mounting the working directory.
+var sandboxFlag bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "denver",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "dv",
+	Short: "Per-directory development containers on top of Podman",
+	Long: `dv manages one container per working directory.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+The container's name is derived from the current directory, and its main
+process is an idle keep-alive, so it stays up after you leave a shell. Run
+"dv shell" to open a new session at any time.`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "dv: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.PersistentFlags().StringVar(&imageFlag, "image", container.DefaultImage,
+		"image used when creating a new project container")
+	rootCmd.PersistentFlags().BoolVarP(&sandboxFlag, "sandbox", "s", false,
+		"start the container without bind-mounting the current directory")
+}
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.denver.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+// connect opens the daemon connection and negotiates the API version, so that
+// an older Docker daemon is not asked for an API version newer than it speaks.
+// The socket path is returned for the callers that need it for hijacked
+// sessions.
+func connect() (*http.Client, string, error) {
+	socket := container.SocketPath()
+	client := container.NewClient(socket)
+	if err := container.NegotiateApiVersion(client); err != nil {
+		return nil, "", err
+	}
+	return client, socket, nil
 }

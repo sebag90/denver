@@ -11,9 +11,8 @@ import (
 	"golang.org/x/term"
 )
 
-// attachToContainerHijack attaches to a container using HTTP connection hijacking.
-// Note: Named attachToContainerHijack to avoid symbol collision with the existing
-// attachToContainer function in main.go.
+// AttachToContainerHijack attaches to the container's main process using HTTP
+// connection hijacking.
 func AttachToContainerHijack(socketPath, containerId string) error {
 	// 1. Connect directly to the Podman/Docker unix socket
 	conn, err := net.Dial("unix", socketPath)
@@ -54,7 +53,7 @@ func AttachToContainerHijack(socketPath, containerId string) error {
 	// wrapping use that default and the output only fills part of the screen.
 	// Resize now (before we start pumping output) so the shell gets SIGWINCH
 	// and redraws its prompt with the correct dimensions.
-	resizeClient := newSocketClient(socketPath)
+	resizeClient := NewClient(socketPath)
 	stopResize := watchWindowSize(func(width, height int) error {
 		return resizeContainer(resizeClient, containerId, width, height)
 	})

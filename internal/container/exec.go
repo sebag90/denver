@@ -3,16 +3,20 @@ package container
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/term"
 )
 
+// ExecConfig is the payload for POST /containers/{id}/exec.
 type ExecConfig struct {
 	AttachStdin  bool     `json:"AttachStdin"`
 	AttachStdout bool     `json:"AttachStdout"`
@@ -22,23 +26,48 @@ type ExecConfig struct {
 	Env          []string `json:"Env,omitempty"`
 }
 
-type ExecCreateResponse struct {
+type execCreateResponse struct {
 	ID string `json:"Id"`
 }
 
-type ExecStartConfig struct {
+type execStartConfig struct {
 	Detach bool `json:"Detach"`
 	Tty    bool `json:"Tty"`
 }
 
-// createExecInstance sends a POST request to create an exec instance and returns its ID.
-func createExecInstance(client *http.Client, containerId string, cmd []string) (string, error) {
+type execInspectResponse struct {
+	Running  bool `json:"Running"`
+	ExitCode int  `json:"ExitCode"`
+}
+
+// Exec runs cmd inside the container and returns its exit code.
+// Exec never touches the container's main process: ending a session only ends
+// the exec'd command, so the container keeps running.
+func Exec(client *http.Client, socketPath, containerID string, cmd []string, tty bool) (int, error) {
+	execID, err := createExecInstance(client, containerID, cmd, tty)
+	if err != nil {
+		return -1, err
+	}
+
+	if err := startExec(socketPath, execID, tty); err != nil {
+		return -1, err
+	}
+
+	return waitExecExit(client, execID)
+}
+
+// createExecInstance sends a POST request to create an exec instance and
+// returns its ID.
+func createExecInstance(client *http.Client, containerID string, cmd []string, tty bool) (string, error) {
 	payload := ExecConfig{
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
-		Tty:          true,
+		Tty:          tty,
 		Cmd:          cmd,
+		// The exec'd process gets the container's environment plus this, so
+		// TERM has to be passed explicitly - it is not inherited from the host.
+		Env: []string{"TERM=" + terminalName()},
 	}
 
 	jsonData, err := json.Marshal(payload)
@@ -46,8 +75,11 @@ func createExecInstance(client *http.Client, containerId string, cmd []string) (
 		return "", fmt.Errorf("marshal exec config: %w", err)
 	}
 
-	endpoint := fmt.Sprintf("%s/containers/%s/exec", baseApiUrl, containerId)
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(jsonData))
+	req, err := http.NewRequest(
+		http.MethodPost,
+		baseApiUrl+"/containers/"+containerID+"/exec",
+		bytes.NewReader(jsonData),
+	)
 	if err != nil {
 		return "", fmt.Errorf("create exec request: %w", err)
 	}
@@ -64,49 +96,48 @@ func createExecInstance(client *http.Client, containerId string, cmd []string) (
 		return "", fmt.Errorf("daemon error %s: %s", resp.Status, body)
 	}
 
-	var res ExecCreateResponse
+	var res execCreateResponse
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return "", fmt.Errorf("decode exec response: %w", err)
 	}
-
+	if res.ID == "" {
+		return "", errors.New("daemon returned an empty exec ID")
+	}
 	return res.ID, nil
 }
 
-// startExecHijack connects to the unix socket, starts the exec instance, and hijacks the stream.
-func startExecHijack(socketPath, execId string) error {
-	// 1. Connect directly to the Podman/Docker unix socket
+// startExec hijacks the connection and streams the exec session until it ends.
+func startExec(socketPath, execID string, tty bool) error {
 	conn, err := net.Dial("unix", socketPath)
 	if err != nil {
 		return fmt.Errorf("dial unix socket: %w", err)
 	}
 	defer conn.Close()
 
-	// 2. Prepare the start request with body {"Detach": false, "Tty": true}
-	startPayload, err := json.Marshal(ExecStartConfig{
-		Detach: false,
-		Tty:    true,
-	})
+	startPayload, err := json.Marshal(execStartConfig{Detach: false, Tty: tty})
 	if err != nil {
 		return fmt.Errorf("marshal start config: %w", err)
 	}
 
-	endpoint := fmt.Sprintf("/v%s/exec/%s/start", apiVersion, execId)
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(startPayload))
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("/v%s/exec/%s/start", apiVersion, execID),
+		bytes.NewReader(startPayload),
+	)
 	if err != nil {
 		return fmt.Errorf("create start request: %w", err)
 	}
-
 	req.Host = "container"
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connection", "Upgrade")
 	req.Header.Set("Upgrade", "tcp")
 
-	// 3. Send request
+	// Write the raw request to the socket so net/http does not try to manage
+	// the connection for us.
 	if err := req.Write(conn); err != nil {
 		return fmt.Errorf("write request: %w", err)
 	}
 
-	// 4. Read response
 	reader := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(reader, req)
 	if err != nil {
@@ -115,42 +146,121 @@ func startExecHijack(socketPath, execId string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusSwitchingProtocols { // HTTP 101
-		return fmt.Errorf("unexpected status: %s", resp.Status)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("unexpected status: %s: %s", resp.Status, bytes.TrimSpace(body))
 	}
 
-	// 4b. Give the exec PTY our real window size, and keep it in sync.
-	resizeClient := newSocketClient(socketPath)
-	stopResize := watchWindowSize(func(width, height int) error {
-		return resizeExec(resizeClient, execId, width, height)
-	})
-	defer stopResize()
+	if tty {
+		// The exec PTY starts at the daemon's default size (80x24). Resize it
+		// before pumping output so the shell redraws with the real dimensions,
+		// and keep it in sync on SIGWINCH.
+		resizeClient := NewClient(socketPath)
+		stopResize := watchWindowSize(func(width, height int) error {
+			return resizeExec(resizeClient, execID, width, height)
+		})
+		defer stopResize()
 
-	// 5. Raw mode on host terminal
-	stdinFd := int(os.Stdin.Fd())
-	if term.IsTerminal(stdinFd) {
-		oldState, err := term.MakeRaw(stdinFd)
-		if err != nil {
-			return fmt.Errorf("set raw terminal: %w", err)
+		stdinFd := int(os.Stdin.Fd())
+		if term.IsTerminal(stdinFd) {
+			oldState, err := term.MakeRaw(stdinFd)
+			if err != nil {
+				return fmt.Errorf("set raw terminal: %w", err)
+			}
+			defer term.Restore(stdinFd, oldState)
 		}
-		defer term.Restore(stdinFd, oldState)
 	}
 
-	// 6. Pipe stdin -> container
-	go func() {
-		io.Copy(conn, os.Stdin)
-	}()
+	// stdin -> container
+	go io.Copy(conn, os.Stdin)
 
-	// 7. Pipe container -> stdout
-	_, err = io.Copy(os.Stdout, reader)
-	return err
+	// container -> terminal
+	if tty {
+		_, err = io.Copy(os.Stdout, reader)
+		return err
+	}
+	return demux(reader, os.Stdout, os.Stderr)
 }
 
-// execInContainer is the high-level function that creates and starts an exec session.
-func execInContainer(client *http.Client, socketPath, containerId string, cmd []string) error {
-	execId, err := createExecInstance(client, containerId, cmd)
+// demux splits the Docker/Podman multiplexed stream (8 byte header followed by
+// the payload) into stdout and stderr. It is used for non-tty sessions; with a
+// tty the daemon sends a raw stream instead.
+func demux(r io.Reader, stdout, stderr io.Writer) error {
+	header := make([]byte, 8)
+
+	for {
+		if _, err := io.ReadFull(r, header); err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				return nil
+			}
+			return err
+		}
+
+		size := binary.BigEndian.Uint32(header[4:8])
+		if size == 0 {
+			continue
+		}
+
+		var dst io.Writer = stdout
+		if header[0] == 2 { // 1 = stdout, 2 = stderr
+			dst = stderr
+		}
+		if _, err := io.CopyN(dst, r, int64(size)); err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+// waitExecExit asks the daemon for the exit code of the finished exec session.
+func waitExecExit(client *http.Client, execID string) (int, error) {
+	deadline := time.Now().Add(5 * time.Second)
+
+	for {
+		res, err := inspectExec(client, execID)
+		if err != nil {
+			return -1, err
+		}
+		if !res.Running || time.Now().After(deadline) {
+			return res.ExitCode, nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+func inspectExec(client *http.Client, execID string) (execInspectResponse, error) {
+	req, err := http.NewRequest(
+		http.MethodGet,
+		baseApiUrl+"/exec/"+execID+"/json",
+		nil,
+	)
 	if err != nil {
-		return fmt.Errorf("create exec instance: %w", err)
+		return execInspectResponse{}, fmt.Errorf("create exec inspect request: %w", err)
 	}
 
-	return startExecHijack(socketPath, execId)
+	resp, err := client.Do(req)
+	if err != nil {
+		return execInspectResponse{}, fmt.Errorf("inspect exec: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return execInspectResponse{}, fmt.Errorf("inspect exec: %s: %s", resp.Status, body)
+	}
+
+	var res execInspectResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return execInspectResponse{}, fmt.Errorf("decode exec inspect response: %w", err)
+	}
+	return res, nil
+}
+
+// terminalName reports the terminal type to advertise to the container.
+func terminalName() string {
+	if t := os.Getenv("TERM"); t != "" {
+		return t
+	}
+	return "xterm-256color"
 }
