@@ -1,6 +1,7 @@
 package container
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,16 +48,49 @@ func RemoveContainer(client *http.Client, name string) (bool, error) {
 	if c == nil {
 		return false, nil
 	}
+	return removeContainer(client, c.ID, c.Running())
+}
 
-	if c.Running() {
-		if err := StopContainer(client, c.ID); err != nil {
+// RemoveAllContainers stops and removes every container dv manages, whatever
+// directory it belongs to. The names of the removed containers are returned.
+// A failing container does not stop the remaining ones from being removed; the
+// returned error joins the failures.
+func RemoveAllContainers(client *http.Client) ([]string, error) {
+	containers, err := ListManagedContainers(client)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		removed []string
+		errs    []error
+	)
+	for _, c := range containers {
+		ok, err := removeContainer(client, c.ID, c.Running())
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", c.Name(), err))
+			continue
+		}
+		if ok {
+			removed = append(removed, c.Name())
+		}
+	}
+	return removed, errors.Join(errs...)
+}
+
+// removeContainer stops a running container and removes it. The boolean
+// reports whether a container was actually removed.
+func removeContainer(client *http.Client, containerID string, running bool) (bool, error) {
+	// Stopping first lets the container shut down cleanly.
+	if running {
+		if err := StopContainer(client, containerID); err != nil {
 			return false, err
 		}
 	}
 
 	req, err := http.NewRequest(
 		http.MethodDelete,
-		baseApiUrl+"/containers/"+c.ID+"?force=1",
+		baseApiUrl+"/containers/"+containerID+"?force=1",
 		nil,
 	)
 	if err != nil {

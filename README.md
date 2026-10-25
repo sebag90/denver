@@ -19,7 +19,7 @@ wrapper or daemon of its own is involved.
 ## Features
 
 - **Per-directory containers** — each working directory gets a stable container
-  named `denver.<hash>`.
+  named `dv.<hash>`.
 - **Persistent sessions** — the container runs an idle keep-alive process, so
   leaving a shell does not stop it and multiple shells can connect at once.
 - **Podman-first** — uses Podman's libpod API when available, with rootless user
@@ -143,6 +143,8 @@ dv up                  # create and start this directory's container
 dv shell               # open an interactive login shell
 dv run go test ./...   # run a one-off command
 dv down                # stop and remove the container
+dv down --all          # stop and remove the containers of every directory
+dv list                # show all containers and their directories
 ```
 
 The default image is `ghcr.io/sebag90/devenv:latest`. It is pulled
@@ -161,6 +163,8 @@ dv --image ubuntu:24.04 shell
 | `dv shell`                   | Open an interactive TTY shell. Aliased as `dv ssh`. The host's `$SHELL` is tried first, with `/bin/sh` as fallback.            |
 | `dv run <command> [args...]` | Run a command non-interactively and return its exit code. Flags after the command belong to the command.                       |
 | `dv down`                    | Stop and remove the current directory's container. Other directories' containers are untouched.                                |
+| `dv down --all`              | Stop and remove every container `dv` created, across all directories.                                                          |
+| `dv list`                    | List every container with its directory, status, and whether it is sandboxed. Aliased as `dv ls`.                               |
 | `dv help`                    | Show all commands and flags.                                                                                                   |
 
 ### Flags
@@ -170,6 +174,7 @@ dv --image ubuntu:24.04 shell
 | `--image <ref>`        | global  | Image to use when creating a new container. Defaults to `ghcr.io/sebag90/devenv:latest`. |
 | `-s`, `--sandbox`      | global  | Do not bind-mount the current directory into the container.                              |
 | `-S`, `--shell <name>` | `shell` | Shell to start inside the container. Defaults to the basename of `$SHELL`, or `bash`.    |
+| `--all`                | `down`  | Stop and remove the containers of every directory, not just the current one.              |
 
 Flags are persistent, so `dv up --sandbox` and `dv --sandbox up` are
 equivalent. For `dv run`, everything after the command name is passed through
@@ -185,8 +190,19 @@ dv run sh -c 'echo "hello from $HOSTNAME"'
 ### Container identity
 
 The container name is derived from the absolute path of the current directory
-using an FNV-1a hash. The same directory always maps to the same container;
-different directories get different containers, even if they share a name.
+using an FNV-1a hash, and is prefixed with `dv.`. The same directory always
+maps to the same container; different directories get different containers,
+even if they share a name.
+
+Older versions of `dv` named containers `denver.<hash>`. They are still
+recognised: `dv down` removes one belonging to the current directory, and
+`dv up` replaces it with a `dv.<hash>` container. `dv down --all` removes both
+naming schemes.
+
+The directory a container was created from is recorded in the
+`denver.directory` label, and its sandbox setting in `denver.sandbox`, which is
+what `dv list` shows. Containers created before the directory label existed are
+still listed, but show `-` as their directory.
 
 Because the name is path-based, moving or renaming a project directory makes
 it look like a new project. Remove the old container with `dv down` before
@@ -252,7 +268,7 @@ arm64, plus Linux arm.
 
 ```text
 .
-├── cmd/                  # Cobra commands: up, shell, run, down
+├── cmd/                  # Cobra commands: up, shell, run, down, list
 ├── internal/container/   # API client, container lifecycle, mounts, exec, pull
 ├── assets/               # Logo assets
 ├── justfile              # Build and test recipes

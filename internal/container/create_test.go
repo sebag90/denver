@@ -89,6 +89,9 @@ func TestCreateDockerContainerBindsWorkspaceByDefault(t *testing.T) {
 	if labels[sandboxLabel] != "false" {
 		t.Errorf("sandbox label = %v, want false", labels[sandboxLabel])
 	}
+	if labels[directoryLabel] != dir {
+		t.Errorf("directory label = %v, want %q", labels[directoryLabel], dir)
+	}
 	hostConfig := payload["HostConfig"].(map[string]any)
 	binds := hostConfig["Binds"].([]any)
 	want := workspaceBind(dir).dockerBind()
@@ -117,6 +120,13 @@ func TestCreateDockerContainerSandboxSkipsWorkspaceBind(t *testing.T) {
 	labels := payload["Labels"].(map[string]any)
 	if labels[sandboxLabel] != "true" {
 		t.Errorf("sandbox label = %v, want true", labels[sandboxLabel])
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if labels[directoryLabel] != dir {
+		t.Errorf("directory label = %v, want %q", labels[directoryLabel], dir)
 	}
 	if binds := payload["HostConfig"].(map[string]any)["Binds"].([]any); len(binds) != 0 {
 		t.Errorf("Binds = %v, want none", binds)

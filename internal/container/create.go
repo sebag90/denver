@@ -17,8 +17,9 @@ import (
 var ErrContainerExists = errors.New("container already exists")
 
 const (
-	projectLabel = "denver.project"
-	sandboxLabel = "denver.sandbox"
+	projectLabel   = "denver.project"
+	sandboxLabel   = "denver.sandbox"
+	directoryLabel = "denver.directory"
 )
 
 // CreateContainer creates the per-directory container and returns its ID.
@@ -48,8 +49,9 @@ func CreateContainer(client *http.Client, imageName string, sandbox bool) (strin
 	env := slices.Concat(commonEnv, mountEnv, engineEnv)
 	name := ContainerName()
 	labels := map[string]string{
-		projectLabel: name,
-		sandboxLabel: fmt.Sprintf("%t", sandbox),
+		projectLabel:   name,
+		sandboxLabel:   fmt.Sprintf("%t", sandbox),
+		directoryLabel: dir,
 	}
 
 	if engine.Podman {
