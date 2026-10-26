@@ -44,23 +44,23 @@ type execInspectResponse struct {
 // Exec never touches the container's main process: ending a session only ends
 // the exec'd command, so the container keeps running.
 func Exec(client *http.Client, socketPath, containerID string, cmd []string, tty bool) (int, error) {
-	execID, err := createExecInstance(client, containerID, cmd, tty)
-	if err != nil {
-		return -1, err
-	}
-
-	if err := startExec(socketPath, execID, tty); err != nil {
-		return -1, err
-	}
-
-	return waitExecExit(client, execID)
+	return execAttached(client, socketPath, containerID, cmd, tty, os.Stdin, os.Stdout, os.Stderr)
 }
 
-// createExecInstance sends a POST request to create an exec instance and
-// returns its ID.
-func createExecInstance(client *http.Client, containerID string, cmd []string, tty bool) (string, error) {
-	payload := ExecConfig{
-		AttachStdin:  true,
+// Output runs cmd inside the container without a tty and returns everything it
+// wrote to stdout. stderr is discarded; commands that need to report failures
+// should do so through their exit code.
+func Output(client *http.Client, socketPath, containerID string, cmd []string) (string, int, error) {
+	var stdout bytes.Buffer
+	code, err := execAttached(client, socketPath, containerID, cmd, false, nil, &stdout, io.Discard)
+	return stdout.String(), code, err
+}
+
+// execAttached creates an exec instance with attached streams and pumps them
+// until the command ends. stdin may be nil when the caller has nothing to send.
+func execAttached(client *http.Client, socketPath, containerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
+	execID, err := createExec(client, containerID, ExecConfig{
+		AttachStdin:  stdin != nil,
 		AttachStdout: true,
 		AttachStderr: true,
 		Tty:          tty,
@@ -68,9 +68,23 @@ func createExecInstance(client *http.Client, containerID string, cmd []string, t
 		// The exec'd process gets the container's environment plus this, so
 		// TERM has to be passed explicitly - it is not inherited from the host.
 		Env: []string{"TERM=" + terminalName()},
+	})
+	if err != nil {
+		return -1, err
 	}
 
-	jsonData, err := json.Marshal(payload)
+	if err := startExec(socketPath, execID, tty, stdin, stdout, stderr); err != nil {
+		return -1, err
+	}
+
+	return waitExecExit(client, execID)
+}
+
+// createExec sends a POST request to create an exec instance and returns its
+// ID. The config decides whether the session is attached, tty enabled or
+// detached.
+func createExec(client *http.Client, containerID string, config ExecConfig) (string, error) {
+	jsonData, err := json.Marshal(config)
 	if err != nil {
 		return "", fmt.Errorf("marshal exec config: %w", err)
 	}
@@ -107,7 +121,7 @@ func createExecInstance(client *http.Client, containerID string, cmd []string, t
 }
 
 // startExec hijacks the connection and streams the exec session until it ends.
-func startExec(socketPath, execID string, tty bool) error {
+func startExec(socketPath, execID string, tty bool, stdin io.Reader, stdout, stderr io.Writer) error {
 	conn, err := net.Dial("unix", socketPath)
 	if err != nil {
 		return fmt.Errorf("dial unix socket: %w", err)
@@ -171,14 +185,16 @@ func startExec(socketPath, execID string, tty bool) error {
 	}
 
 	// stdin -> container
-	go io.Copy(conn, os.Stdin)
+	if stdin != nil {
+		go io.Copy(conn, stdin)
+	}
 
-	// container -> terminal
+	// container -> output
 	if tty {
-		_, err = io.Copy(os.Stdout, reader)
+		_, err = io.Copy(stdout, reader)
 		return err
 	}
-	return demux(reader, os.Stdout, os.Stderr)
+	return demux(reader, stdout, stderr)
 }
 
 // demux splits the Docker/Podman multiplexed stream (8 byte header followed by

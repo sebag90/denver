@@ -142,6 +142,9 @@ cd ~/src/my-project
 dv up                  # create and start this directory's container
 dv shell               # open an interactive login shell
 dv run go test ./...   # run a one-off command
+dv run -d ./fetch.sh   # start a job in the background
+dv ps                  # list detached jobs
+dv logs -f <job>       # follow a job's output
 dv down                # stop and remove the container
 dv down --all          # stop and remove the containers of every directory
 dv list                # show all containers and their directories
@@ -162,6 +165,9 @@ dv --image ubuntu:24.04 shell
 | `dv up`                      | Create and start the container for the current directory. Idempotent: an existing container is reused or restarted if stopped. |
 | `dv shell`                   | Open an interactive TTY shell. Aliased as `dv ssh`. The host's `$SHELL` is tried first, with `/bin/sh` as fallback.            |
 | `dv run <command> [args...]` | Run a command non-interactively and return its exit code. Flags after the command belong to the command.                       |
+| `dv run -d <command> ...`    | Start a command in the background and return immediately. Output goes to a log file inside the container.                      |
+| `dv ps`                      | List the detached jobs of the current directory's container. Aliased as `dv jobs`.                                             |
+| `dv logs <job>`              | Print a detached job's output. With `-f`, follow it until the job ends.                                                        |
 | `dv down`                    | Stop and remove the current directory's container. Other directories' containers are untouched.                                |
 | `dv down --all`              | Stop and remove every container `dv` created, across all directories.                                                          |
 | `dv list`                    | List every container with its directory, status, and whether it is sandboxed. Aliased as `dv ls`.                               |
@@ -175,6 +181,9 @@ dv --image ubuntu:24.04 shell
 | `-s`, `--sandbox`      | global  | Do not bind-mount the current directory into the container.                              |
 | `-S`, `--shell <name>` | `shell` | Shell to start inside the container. Defaults to the basename of `$SHELL`, or `bash`.    |
 | `--all`                | `down`  | Stop and remove the containers of every directory, not just the current one.              |
+| `-d`, `--detach`       | `run`   | Start the command in the background instead of streaming its output.                      |
+| `--log <path>`         | `run`   | Path inside the container for a detached command's output. Requires `--detach`.           |
+| `-f`, `--follow`       | `logs`  | Keep printing new output until the job ends.                                              |
 
 Flags are persistent, so `dv up --sandbox` and `dv --sandbox up` are
 equivalent. For `dv run`, everything after the command name is passed through
@@ -184,6 +193,35 @@ unchanged:
 dv run ls -la
 dv run sh -c 'echo "hello from $HOSTNAME"'
 ```
+
+### Detached jobs
+
+`dv run --detach` starts a command and returns without waiting for it. This is
+useful for long-running scripts, builds, or downloads:
+
+```sh
+dv run -d -- ./fetch-data.sh
+dv ps                 # running, exited or lost, with exit code and age
+dv logs -f <job>      # follow the output
+```
+
+A job's output and metadata live inside the container under
+`/tmp/dv/jobs/<job>/`: `log` holds the output, `pid`, `started` and `cmd`
+describe the process, and `exit` appears when it finishes. Use `--log <path>`
+to write the output somewhere else inside the container, for example into the
+bind-mounted workspace so it survives `dv down`:
+
+```sh
+dv run -d --log /work/project/fetch.log -- ./fetch-data.sh
+```
+
+Jobs run as normal exec sessions. They keep running while the container is up
+and end when it is stopped, restarted, or removed; their metadata goes away
+with the container. `dv ps` only knows about jobs started by `dv` (the engine
+API has no way to list or re-attach to exec sessions), so use
+`dv run ps aux` to see every process inside the container. There is no
+interactive re-attach: use `dv logs -f` to watch output, or run the command
+under `tmux` inside the container if you need to interact with it later.
 
 ## How it works
 
@@ -268,7 +306,7 @@ arm64, plus Linux arm.
 
 ```text
 .
-├── cmd/                  # Cobra commands: up, shell, run, down, list
+├── cmd/                  # Cobra commands: up, shell, run, ps, logs, down, list
 ├── internal/container/   # API client, container lifecycle, mounts, exec, pull
 ├── assets/               # Logo assets
 ├── justfile              # Build and test recipes
