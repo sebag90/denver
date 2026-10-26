@@ -172,6 +172,7 @@ dv --image ubuntu:24.04 shell
 | `dv down --all`              | Stop and remove every container `dv` created, across all directories.                                                          |
 | `dv list`                    | List every container with its directory, status, and whether it is sandboxed. Aliased as `dv ls`.                               |
 | `dv help`                    | Show all commands and flags.                                                                                                   |
+| `dv --version`               | Print the `dv` version.                                                                                                        |
 
 ### Flags
 

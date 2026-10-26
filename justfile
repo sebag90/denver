@@ -9,6 +9,9 @@
 binary  := "dv"
 dist    := "dist"
 targets := "linux/amd64 linux/arm64 linux/arm darwin/amd64 darwin/arm64 freebsd/amd64 freebsd/arm64"
+pkg     := "github.com/sebag90/denver"
+version := `git describe --tags --always --dirty 2>/dev/null || echo dev`
+ldflags := "-s -w -X " + pkg + "/cmd.version=" + version
 
 # List the available recipes.
 default:
@@ -16,7 +19,7 @@ default:
 
 # Build for the host platform into ./denver.
 build:
-    go build -trimpath -ldflags="-s -w" -o {{binary}} .
+    go build -trimpath -ldflags="{{ldflags}}" -o {{binary}} .
 
 # Build for every supported OS/arch into ./dist.
 build-all:
@@ -28,7 +31,7 @@ build-all:
         arch="${target#*/}"
         echo "==> ${os}/${arch}"
         CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
-            go build -trimpath -ldflags="-s -w" \
+            go build -trimpath -ldflags="{{ldflags}}" \
             -o "{{dist}}/{{binary}}-${os}-${arch}" .
     done
     ls -lh {{dist}}
@@ -43,7 +46,7 @@ check: test
 
 # Install into GOBIN/GOPATH/bin.
 install:
-    go install -trimpath -ldflags="-s -w" .
+    go install -trimpath -ldflags="{{ldflags}}" .
 
 # Remove build artifacts.
 clean:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime/debug"
 
 	"github.com/sebag90/denver/internal/container"
 	"github.com/spf13/cobra"
@@ -15,6 +16,25 @@ var imageFlag string
 // sandboxFlag starts containers without bind-mounting the working directory.
 var sandboxFlag bool
 
+// version is the dv release. Release builds set it via
+// -ldflags "-X github.com/sebag90/denver/cmd.version=v0.1.0"; it must stay a
+// constant string for the linker to be able to overwrite it. When it is left
+// at "dev", the module version recorded in the build info is used instead
+// (set by "go install ...@version" and by plain "go build" with VCS stamping).
+var version = "dev"
+
+func resolvedVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		if v := info.Main.Version; v != "" && v != "(devel)" {
+			return v
+		}
+	}
+	return version
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "dv",
@@ -24,6 +44,7 @@ var rootCmd = &cobra.Command{
 The container's name is derived from the current directory, and its main
 process is an idle keep-alive, so it stays up after you leave a shell. Run
 "dv shell" to open a new session at any time.`,
+	Version:       resolvedVersion(),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
