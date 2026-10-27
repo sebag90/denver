@@ -66,6 +66,22 @@ bare binaries `dv-<os>-<arch>`, e.g. `dv-linux-amd64` or `dv-darwin-arm64`.
 
 ### From a release
 
+The install script picks the right asset for the current platform and puts it in
+`~/.local/bin`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/sebag90/denver/main/install.sh | sh
+# pin a version
+curl -fsSL https://raw.githubusercontent.com/sebag90/denver/main/install.sh | sh -s -- v0.3.1
+# install somewhere else
+curl -fsSL https://raw.githubusercontent.com/sebag90/denver/main/install.sh | DV_INSTALL_DIR=~/bin sh
+```
+
+Read [install.sh](install.sh) first if you prefer; it is a short POSIX shell
+script that only uses `curl`, `uname`, and `install`.
+
+### Manually
+
 GitHub serves the assets of the newest non-prerelease release under a stable
 `latest` path, so you can download just the binary that matches your host
 without querying the API first:
