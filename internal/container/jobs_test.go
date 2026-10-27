@@ -2,6 +2,7 @@ package container
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -250,5 +251,43 @@ func TestLogCommand(t *testing.T) {
 	followCmd := LogCommand("0123456789ab", true)
 	if followCmd[5] != "follow" {
 		t.Errorf("follow LogCommand = %v", followCmd)
+	}
+}
+
+func TestHasJobCommand(t *testing.T) {
+	jobsDir := filepath.Join(t.TempDir(), "jobs")
+	const jobID = "aaaaaaaaaaaa"
+
+	cmd := HasJobCommand(jobID)
+	if len(cmd) != 5 || cmd[0] != "/bin/sh" || cmd[2] != `[ -d "$1" ]` || cmd[4] != JobsDir+"/"+jobID {
+		t.Fatalf("HasJobCommand = %v", cmd)
+	}
+
+	exists := func() bool {
+		t.Helper()
+		argv := append([]string{cmd[0]}, cmd[1:]...)
+		argv[4] = strings.Replace(argv[4], JobsDir, jobsDir, 1)
+		err := exec.Command(argv[0], argv[1:]...).Run()
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			if exitErr.ExitCode() != 1 {
+				t.Fatalf("exit code = %d, want 1", exitErr.ExitCode())
+			}
+			return false
+		}
+		if err != nil {
+			t.Fatalf("run check: %v", err)
+		}
+		return true
+	}
+
+	if exists() {
+		t.Error("job reported present before it was created")
+	}
+	if err := os.MkdirAll(filepath.Join(jobsDir, jobID), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if !exists() {
+		t.Error("job reported missing after it was created")
 	}
 }

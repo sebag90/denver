@@ -99,9 +99,37 @@ func ValidJobID(id string) bool {
 	return err == nil
 }
 
+// HasJob reports whether the container holds a job with the given ID. The job
+// directory is the same source of truth ListJobs reads. The caller is expected
+// to have validated jobID.
+func HasJob(client *http.Client, socketPath, containerID, jobID string) (bool, error) {
+	_, code, err := Output(client, socketPath, containerID, HasJobCommand(jobID))
+	if err != nil {
+		return false, err
+	}
+	switch code {
+	case 0:
+		return true, nil
+	case 1:
+		return false, nil
+	default:
+		return false, fmt.Errorf("check job: command exited with code %d", code)
+	}
+}
+
+// HasJobCommand builds the exec command that reports whether a job exists in a
+// container through its exit code.
+func HasJobCommand(jobID string) []string {
+	return []string{"/bin/sh", "-c", `[ -d "$1" ]`, "dv-job", JobsDir + "/" + jobID}
+}
+
 // StartJob starts argv as a detached exec session and returns the job ID. The
 // command runs independently of the caller; its output goes to logPath (inside
 // the container), which defaults to a file in the job's directory.
+//
+// The ID is 12 random hex characters. dv treats job IDs as unique across
+// containers, which is what lets a job be looked up without knowing which
+// container started it.
 //
 // ensureContainer must already have made sure the container is running.
 func StartJob(client *http.Client, containerID string, argv []string, logPath string) (string, error) {

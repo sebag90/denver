@@ -13,9 +13,6 @@ long-lived container. Run a shell, execute commands, or leave it running in the
 background — without writing a Compose file or rebuilding a devcontainer from
 scratch.
 
-It talks directly to the Podman or Docker-compatible API socket, so no CLI
-wrapper or daemon of its own is involved.
-
 ## Features
 
 - **Per-directory containers** — each working directory gets a stable container
@@ -24,10 +21,6 @@ wrapper or daemon of its own is involved.
   leaving a shell does not stop it and multiple shells can connect at once.
 - **Podman-first** — uses Podman's libpod API when available, with rootless user
   mapping, and falls back to the Docker-compatible API.
-- **Host conveniences** — mounts the current directory at the same absolute
-  path, plus existing dotfiles, Wayland, and the container engine socket.
-- **Optional sandbox mode** — skip the workspace bind and use the container as
-  an isolated scratch environment.
 - **Small and portable** — a single static Go binary for Linux, macOS, and
   FreeBSD.
 
@@ -59,13 +52,6 @@ Windows is not supported.
 
 ## Installation
 
-Prebuilt binaries for Linux, macOS, and FreeBSD (amd64 and arm64, plus
-32-bit ARM on Linux) are attached to every
-[release](https://github.com/sebag90/denver/releases). Each release publishes the
-bare binaries `dv-<os>-<arch>`, e.g. `dv-linux-amd64` or `dv-darwin-arm64`.
-
-### From a release
-
 The install script picks the right asset for the current platform and puts it in
 `~/.local/bin`:
 
@@ -76,60 +62,6 @@ curl -fsSL https://raw.githubusercontent.com/sebag90/denver/main/install.sh | sh
 # install somewhere else
 curl -fsSL https://raw.githubusercontent.com/sebag90/denver/main/install.sh | DV_INSTALL_DIR=~/bin sh
 ```
-
-Read [install.sh](install.sh) first if you prefer; it is a short POSIX shell
-script that only uses `curl`, `uname`, and `install`.
-
-### Manually
-
-GitHub serves the assets of the newest non-prerelease release under a stable
-`latest` path, so you can download just the binary that matches your host
-without querying the API first:
-
-```text
-https://github.com/sebag90/denver/releases/latest/download/<asset-name>
-```
-
-Pick the asset for the current platform and install it:
-
-```sh
-case "$(uname -s)-$(uname -m)" in
-  Linux-x86_64)              asset=dv-linux-amd64 ;;
-  Linux-aarch64|Linux-arm64) asset=dv-linux-arm64 ;;
-  Linux-armv6l|Linux-armv7l) asset=dv-linux-arm ;;
-  Darwin-x86_64)             asset=dv-darwin-amd64 ;;
-  Darwin-arm64)              asset=dv-darwin-arm64 ;;
-  FreeBSD-x86_64)            asset=dv-freebsd-amd64 ;;
-  FreeBSD-arm64)             asset=dv-freebsd-arm64 ;;
-  *) echo "unsupported platform: $(uname -s)-$(uname -m)" >&2; exit 1 ;;
-esac
-
-curl -fsSL -o dv "https://github.com/sebag90/denver/releases/latest/download/$asset"
-chmod +x dv
-install -m 0755 dv ~/.local/bin/dv
-```
-
-To install a specific version, replace `latest` with the tag, for example
-`releases/download/v0.1.0/dv-linux-amd64`. With the
-[GitHub CLI](https://cli.github.com) you can also do:
-
-```sh
-gh release download --pattern 'dv-linux-amd64'   # add --tag v0.1.0 to pin
-```
-
-To list the available asset names instead of guessing them:
-
-```sh
-curl -fsSL https://api.github.com/repos/sebag90/denver/releases/latest \
-  | jq -r '.assets[].browser_download_url'
-```
-
-Two caveats:
-
-- Releases do not ship checksums, so `curl -f` over HTTPS is the only integrity
-  check. Verify by building from source if that matters to you.
-- The 32-bit `dv-linux-arm` build targets ARMv7 (Go's default `GOARM=7`); it
-  will fault on older ARMv6 hosts.
 
 ### From source
 
@@ -160,13 +92,14 @@ dv shell               # open an interactive login shell
 dv run go test ./...   # run a one-off command
 dv run -d ./fetch.sh   # start a job in the background
 dv ps                  # list detached jobs
+dv ps --all            # list detached jobs of every running container
 dv logs -f <job>       # follow a job's output
 dv down                # stop and remove the container
 dv down --all          # stop and remove the containers of every directory
 dv list                # show all containers and their directories
 ```
 
-The default image is `ghcr.io/sebag90/devenv:latest`. It is pulled
+The default image is [`ghcr.io/sebag90/devenv:latest`](https://github.com/sebag90/devenv/pkgs/container/devenv). It is pulled
 automatically the first time a container is created. Use another image with
 the global `--image` flag:
 
@@ -182,11 +115,12 @@ dv --image ubuntu:24.04 shell
 | `dv shell`                   | Open an interactive TTY shell. Aliased as `dv ssh`. The host's `$SHELL` is tried first, with `/bin/sh` as fallback.            |
 | `dv run <command> [args...]` | Run a command non-interactively and return its exit code. Flags after the command belong to the command.                       |
 | `dv run -d <command> ...`    | Start a command in the background and return immediately. Output goes to a log file inside the container.                      |
-| `dv ps`                      | List the detached jobs of the current directory's container. Aliased as `dv jobs`.                                             |
-| `dv logs <job>`              | Print a detached job's output. With `-f`, follow it until the job ends.                                                        |
+| `dv ps`                      | List the detached jobs of the current directory's container, with the directory each job runs in. Aliased as `dv jobs`.        |
+| `dv ps --all`                | List the detached jobs of every running container. Jobs of stopped containers cannot be read.                                  |
+| `dv logs <job>`              | Print a detached job's output, wherever its container lives. With `-f`, follow it until the job ends.                          |
 | `dv down`                    | Stop and remove the current directory's container. Other directories' containers are untouched.                                |
 | `dv down --all`              | Stop and remove every container `dv` created, across all directories.                                                          |
-| `dv list`                    | List every container with its directory, status, and whether it is sandboxed. Aliased as `dv ls`.                               |
+| `dv list`                    | List every container with its directory, status, and whether it is sandboxed. Aliased as `dv ls`.                              |
 | `dv help`                    | Show all commands and flags.                                                                                                   |
 | `dv --version`               | Print the `dv` version.                                                                                                        |
 
@@ -197,19 +131,11 @@ dv --image ubuntu:24.04 shell
 | `--image <ref>`        | global  | Image to use when creating a new container. Defaults to `ghcr.io/sebag90/devenv:latest`. |
 | `-s`, `--sandbox`      | global  | Do not bind-mount the current directory into the container.                              |
 | `-S`, `--shell <name>` | `shell` | Shell to start inside the container. Defaults to the basename of `$SHELL`, or `bash`.    |
-| `--all`                | `down`  | Stop and remove the containers of every directory, not just the current one.              |
-| `-d`, `--detach`       | `run`   | Start the command in the background instead of streaming its output.                      |
-| `--log <path>`         | `run`   | Path inside the container for a detached command's output. Requires `--detach`.           |
-| `-f`, `--follow`       | `logs`  | Keep printing new output until the job ends.                                              |
-
-Flags are persistent, so `dv up --sandbox` and `dv --sandbox up` are
-equivalent. For `dv run`, everything after the command name is passed through
-unchanged:
-
-```sh
-dv run ls -la
-dv run sh -c 'echo "hello from $HOSTNAME"'
-```
+| `--all`                | `down`  | Stop and remove the containers of every directory, not just the current one.             |
+| `--all`                | `ps`    | List the jobs of every running container, not just the current directory's.              |
+| `-d`, `--detach`       | `run`   | Start the command in the background instead of streaming its output.                     |
+| `--log <path>`         | `run`   | Path inside the container for a detached command's output. Requires `--detach`.          |
+| `-f`, `--follow`       | `logs`  | Keep printing new output until the job ends.                                             |
 
 ### Detached jobs
 
@@ -219,6 +145,7 @@ useful for long-running scripts, builds, or downloads:
 ```sh
 dv run -d -- ./fetch-data.sh
 dv ps                 # running, exited or lost, with exit code and age
+dv ps --all           # same, for every running container
 dv logs -f <job>      # follow the output
 ```
 
@@ -239,6 +166,18 @@ API has no way to list or re-attach to exec sessions), so use
 `dv run ps aux` to see every process inside the container. There is no
 interactive re-attach: use `dv logs -f` to watch output, or run the command
 under `tmux` inside the container if you need to interact with it later.
+
+`dv ps` lists the jobs of the current directory's container. `dv ps --all`
+walks every running container `dv` created and shows a `DIRECTORY` column, so
+background work can be found from anywhere. Jobs of a stopped container are
+not listed: `dv` reads their metadata by running a command inside the
+container, and a stopped container cannot be entered.
+
+`dv logs <job>` searches the current directory's container first and then every
+other running container, so a job listed by `dv ps --all` can be read without
+`cd`ing to its directory. That relies on job IDs being unique: they are 12
+random hex characters (48 bits), which makes a collision between two
+containers improbable rather than impossible.
 
 ## How it works
 
