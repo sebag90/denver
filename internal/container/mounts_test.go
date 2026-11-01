@@ -16,7 +16,7 @@ func TestHostMountsIncludesExistingPathsAndWayland(t *testing.T) {
 	t.Setenv("XDG_RUNTIME_DIR", runtimeDir)
 	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
 
-	for _, rel := range []string{".pi/agent", ".ssh", ".gitconfig", ".netrc"} {
+	for _, rel := range []string{".pi/agent", ".pig/agent", ".ssh", ".gitconfig", ".netrc"} {
 		path := filepath.Join(home, rel)
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
@@ -39,7 +39,7 @@ func TestHostMountsIncludesExistingPathsAndWayland(t *testing.T) {
 		binds[i] = bind.dockerBind()
 	}
 
-	for _, rel := range []string{".pi/agent", ".ssh", ".gitconfig", ".netrc"} {
+	for _, rel := range []string{".pi/agent", ".pig/agent", ".ssh", ".gitconfig", ".netrc"} {
 		want := filepath.Join(home, rel) + ":" + containerHome + "/" + rel + ":Z"
 		if !slices.Contains(binds, want) {
 			t.Errorf("missing bind %q in %v", want, binds)
