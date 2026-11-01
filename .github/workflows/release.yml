@@ -1,0 +1,211 @@
+name: Release
+
+# Manual release: Actions -> Release -> Run workflow.
+#
+# The version input becomes the git tag, the value compiled into the binary
+# via -ldflags, and the GitHub release name. The tag is created at the commit
+# the workflow runs on, so run it from main.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. v0.4.0"
+        required: true
+        type: string
+      dry_run:
+        description: "Only test and build; do not create a tag or release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PACKAGE: github.com/sebag90/denver
+
+jobs:
+  prepare:
+    name: Validate version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check version and preconditions
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          INPUT_VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          version="$INPUT_VERSION"
+
+          if ! printf '%s' "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::Version must look like v1.2.3 or v1.2.3-rc.1, got '$version'"
+            exit 1
+          fi
+
+          if [ "$DRY_RUN" != "true" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Releases must be run from main, but this run is on $GITHUB_REF"
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+              echo "::error::Tag $version already exists"
+              exit 1
+            fi
+            if gh release view "$version" >/dev/null 2>&1; then
+              echo "::error::Release $version already exists"
+              exit 1
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Test
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Verify version is compiled in
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          go build -trimpath -buildvcs=false \
+            -ldflags="-s -w -X $PACKAGE/cmd.version=$VERSION" \
+            -o dv .
+          ./dv --version
+          ./dv --version | grep -F "$VERSION"
+
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    needs: [prepare, test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: arm
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: freebsd
+            goarch: amd64
+          - goos: freebsd
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          set -euo pipefail
+          name="dv-${GOOS}-${GOARCH}"
+          mkdir -p dist
+
+          go build -trimpath -buildvcs=false \
+            -ldflags="-s -w -X $PACKAGE/cmd.version=$VERSION" \
+            -o "dist/$name" .
+
+          # The runner is linux/amd64, so smoke-test the binary we can execute.
+          if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "amd64" ]; then
+            "dist/$name" --version
+            "dist/$name" --version | grep -F "$VERSION"
+          fi
+
+          file "dist/$name"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dv-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/dv-${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub release
+    needs: [prepare, build]
+    if: inputs.dry_run == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Add checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          chmod +x dv-*
+          sha256sum dv-* > SHA256SUMS
+          cat SHA256SUMS
+
+      # Create a draft first, upload every asset, then publish. A failed run
+      # therefore never exposes a half-filled release; delete the draft (and
+      # its tag) before retrying.
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          case "$VERSION" in
+            *-*) prerelease+=(--prerelease) ;;
+          esac
+
+          gh release create "$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes \
+            --draft \
+            "${prerelease[@]}" \
+            dist/*
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: gh release edit "$VERSION" --draft=false

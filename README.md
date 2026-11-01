@@ -259,6 +259,26 @@ just clean       # remove build artifacts
 `just build-all` produces Linux, macOS, and FreeBSD binaries for amd64 and
 arm64, plus Linux arm.
 
+## Releasing
+
+Releases are built by the [release workflow](.github/workflows/release.yml),
+triggered manually from GitHub:
+
+1. Make sure the commit you want to release is on `main`.
+2. Go to **Actions → Release → Run workflow**, choose `main`, and enter the
+   version (for example `v0.4.0`).
+3. The workflow runs the tests, cross-compiles every target with that version
+   compiled into the binary, creates the `v0.4.0` tag at the workflow's commit,
+   and publishes a GitHub release with the binaries and `SHA256SUMS`.
+
+Enable **dry_run** to run the tests and builds without creating a tag or
+release; the binaries remain available as workflow artifacts. If a run fails
+after creating the draft release, delete the draft (and its tag) before
+retrying, since the workflow refuses to overwrite an existing tag or release.
+
+Pre-release versions such as `v0.4.0-rc.1` are published as GitHub
+pre-releases.
+
 ## Project layout
 
 ```text
