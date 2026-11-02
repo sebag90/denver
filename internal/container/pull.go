@@ -218,7 +218,7 @@ func (r *ttyReporter) update(s pullSnapshot) {
 	r.drawn = true
 	r.frame++
 
-	line := progressLine(s, terminalWidth(r.w), &r.lastPct, r.frame)
+	line := progressLine(s, min(terminalWidth(r.w), 90), &r.lastPct, r.frame)
 	fmt.Fprintf(r.w, "\r\x1b[K%s", line)
 }
 

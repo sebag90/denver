@@ -17,9 +17,13 @@ ldflags := "-s -w -X " + pkg + "/cmd.version=" + version
 default:
     @just --list
 
-# Build for the host platform into ./denver.
+# Build for the host platform into ./{{binary}} using a throwaway Go container.
 build:
-    go build -trimpath -ldflags="{{ldflags}}" -o {{binary}} .
+    podman run --rm \
+        -v "{{justfile_directory()}}:/src:Z" -w /src \
+        -v denver-go-cache:/go -e GOCACHE=/go/cache \
+        golang:1.27 \
+        go build -trimpath -ldflags="{{ldflags}}" -o {{binary}} .
 
 # Build for every supported OS/arch into ./dist.
 build-all:
