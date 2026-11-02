@@ -24,7 +24,7 @@ const (
 // in the container when they exist.
 var hostHomePaths = []string{
 	".pi/agent",
-	".pig/agent",
+	".config/pig",
 	".aws",
 	".gitconfig",
 	".ssh",

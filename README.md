@@ -210,7 +210,7 @@ By default, the project container includes:
 | ------------------ | --------------------------------------------------- | ---------------------------------------------------------------- |
 | Current directory  | Same absolute path                                  | Read-write, SELinux relabeled with `Z`. Disabled by `--sandbox`. |
 | `~/.pi/agent`      | `/home/dev/.pi/agent`                               | Only when present.                                               |
-| `~/.pig/agent`     | `/home/dev/.pig/agent`                              | Only when present.                                               |
+| `~/.config/pig`    | `/home/dev/.config/pig`                             | Only when present.                                               |
 | `~/.aws`           | `/home/dev/.aws`                                    | Only when present.                                               |
 | `~/.gitconfig`     | `/home/dev/.gitconfig`                              | Only when present.                                               |
 | `~/.ssh`           | `/home/dev/.ssh`                                    | Only when present.                                               |
