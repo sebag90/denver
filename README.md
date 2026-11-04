@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/mark.svg" alt="Paguro logo" width="140">
+  <img src="assets/icon.svg" alt="Paguro logo" width="140">
 </p>
 
 <h1 align="center">Paguro</h1>
