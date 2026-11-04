@@ -48,7 +48,7 @@ func (c Container) Sandbox() bool {
 }
 
 const (
-	// preferredApiVersion is the newest API version dv is written against.
+	// preferredApiVersion is the newest API version paguro is written against.
 	preferredApiVersion = "1.54"
 
 	// apiHost is ignored by the unix socket transport, but requests need a
@@ -57,8 +57,8 @@ const (
 )
 
 // apiVersion and baseApiUrl describe the API version in use for every
-// request. They start at the newest version dv knows and are lowered together
-// by NegotiateApiVersion when the daemon speaks something older.
+// request. They start at the newest version paguro knows and are lowered
+// together by NegotiateApiVersion when the daemon speaks something older.
 var (
 	apiVersion = preferredApiVersion
 	baseApiUrl = versionedUrl(apiVersion)
@@ -137,14 +137,9 @@ func FindContainer(client *http.Client, name string) (*Container, error) {
 	return nil, nil
 }
 
-// containerNamePrefix starts the name of every container dv creates for a
+// containerNamePrefix starts the name of every container paguro creates for a
 // project directory.
-const containerNamePrefix = "dv."
-
-// legacyContainerNamePrefix was used before the names were shortened from
-// denver.<hash> to dv.<hash>. It is still recognised so that containers
-// created by older versions can be found, replaced and removed.
-const legacyContainerNamePrefix = "denver."
+const containerNamePrefix = "paguro."
 
 func hash(s string) string {
 	h := fnv.New32a()
@@ -155,27 +150,16 @@ func hash(s string) string {
 // ContainerName derives a stable container name from the current directory, so
 // every directory gets its own container.
 func ContainerName() string {
-	return nameForDirectory(containerNamePrefix)
-}
-
-// LegacyContainerName returns the container name that dv versions before the
-// dv.<hash> rename derived from the current directory.
-func LegacyContainerName() string {
-	return nameForDirectory(legacyContainerNamePrefix)
-}
-
-func nameForDirectory(prefix string) string {
 	path, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dv: cannot determine working directory: %v\n", err)
+		fmt.Fprintf(os.Stderr, "paguro: cannot determine working directory: %v\n", err)
 	}
-	return prefix + hash(path)
+	return containerNamePrefix + hash(path)
 }
 
-// ListManagedContainers returns every container dv created, whatever directory
-// it belongs to, including containers that still carry the legacy
-// denver.<hash> name. Containers made before dv added labels are matched by
-// name, so the whole list is fetched and filtered here.
+// ListManagedContainers returns every container paguro created, whatever
+// directory it belongs to. Containers made before paguro added labels are
+// matched by name, so the whole list is fetched and filtered here.
 func ListManagedContainers(client *http.Client) ([]Container, error) {
 	containers, err := listContainers(client, "")
 	if err != nil {
@@ -191,8 +175,8 @@ func ListManagedContainers(client *http.Client) ([]Container, error) {
 	return managed, nil
 }
 
-// isManagedContainer reports whether dv created the container: it carries one
-// of dv's labels or has one of dv's name prefixes.
+// isManagedContainer reports whether paguro created the container: it carries
+// one of paguro's labels or its name prefix.
 func isManagedContainer(c Container) bool {
 	if _, ok := c.Labels[projectLabel]; ok {
 		return true
@@ -203,15 +187,11 @@ func isManagedContainer(c Container) bool {
 	return isManagedName(c.Name())
 }
 
-// isManagedName reports whether name looks like a container dv derived from a
-// directory, in either the current or the legacy naming scheme.
+// isManagedName reports whether name looks like a container paguro derived
+// from a directory.
 func isManagedName(name string) bool {
-	for _, prefix := range []string{containerNamePrefix, legacyContainerNamePrefix} {
-		if suffix, ok := strings.CutPrefix(name, prefix); ok && isDigits(suffix) {
-			return true
-		}
-	}
-	return false
+	suffix, ok := strings.CutPrefix(name, containerNamePrefix)
+	return ok && isDigits(suffix)
 }
 
 // isDigits reports whether s is a non-empty run of decimal digits, which is

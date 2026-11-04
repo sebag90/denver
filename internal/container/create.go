@@ -17,9 +17,9 @@ import (
 var ErrContainerExists = errors.New("container already exists")
 
 const (
-	projectLabel   = "denver.project"
-	sandboxLabel   = "denver.sandbox"
-	directoryLabel = "denver.directory"
+	projectLabel   = "paguro.project"
+	sandboxLabel   = "paguro.sandbox"
+	directoryLabel = "paguro.directory"
 )
 
 // CreateContainer creates the per-directory container and returns its ID.

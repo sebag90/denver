@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -39,10 +39,10 @@ func logs(cmd *cobra.Command, args []string) error {
 
 // jobContainer returns the container that holds the job. The container for the
 // current directory is checked first, so the common case costs one cheap exec;
-// after that every other running container dv created is searched, so a job
-// listed by "dv ps --all" can be read from any directory.
+// after that every other running container paguro created is searched, so a
+// job listed by "paguro ps --all" can be read from any directory.
 //
-// Job IDs are random, which dv relies on to treat them as unique across
+// Job IDs are random, which paguro relies on to treat them as unique across
 // containers. A job in a stopped container is not found, because its metadata
 // cannot be read without entering the container.
 func jobContainer(client *http.Client, socket, jobID string) (*container.Container, error) {
@@ -86,11 +86,13 @@ func jobContainer(client *http.Client, socket, jobID string) (*container.Contain
 var logsCmd = &cobra.Command{
 	Use:   "logs <job>",
 	Short: "Print the output of a detached job",
-	Long: `logs prints everything a job started with "dv run --detach" has written.
+	Long: `logs prints everything a job started with "paguro run --detach" has
+written.
 
 The job is looked up in the current directory's container first and then in
-every other running container dv created, so a job listed by "dv ps --all" can
-be read from any directory. Jobs of stopped containers cannot be found.
+every other running container paguro created, so a job listed by
+"paguro ps --all" can be read from any directory. Jobs of stopped containers
+cannot be found.
 
 With --follow it keeps printing as the job writes more, until the job ends.
 The log file lives inside the container and is removed with it.`,

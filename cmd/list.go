@@ -7,7 +7,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -31,8 +31,7 @@ func list(cmd *cobra.Command, args []string) error {
 }
 
 // listRows renders the containers as an aligned table sorted by directory and
-// name. Containers created before the directory label existed show "-" instead
-// of a directory.
+// name. Containers without a directory label show "-" instead of a directory.
 func listRows(containers []container.Container) string {
 	sorted := slices.Clone(containers)
 	sort.Slice(sorted, func(i, j int) bool {
@@ -73,11 +72,10 @@ var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List the containers for all directories",
-	Long: `list shows every container dv created, with the directory it belongs to and
-whether it was started in sandbox mode.
+	Long: `list shows every container paguro created, with the directory it belongs
+to and whether it was started in sandbox mode.
 
-Containers created by versions of dv that did not record the directory show
-"-" instead.`,
+Containers that did not record the directory show "-" instead.`,
 	Args: cobra.NoArgs,
 	RunE: list,
 }

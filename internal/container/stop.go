@@ -51,8 +51,9 @@ func RemoveContainer(client *http.Client, name string) (bool, error) {
 	return removeContainer(client, c.ID, c.Running())
 }
 
-// RemoveAllContainers stops and removes every container dv manages, whatever
-// directory it belongs to. The names of the removed containers are returned.
+// RemoveAllContainers stops and removes every container paguro manages,
+// whatever directory it belongs to. The names of the removed containers are
+// returned.
 // A failing container does not stop the remaining ones from being removed; the
 // returned error joins the failures.
 func RemoveAllContainers(client *http.Client) ([]string, error) {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -24,13 +23,6 @@ func EnsureContainer(client *http.Client, image string, sandbox bool) (string, e
 		}
 
 		if c == nil {
-			// Containers from older dv versions still carry the legacy
-			// denver.<hash> name. Replace one instead of leaving a second
-			// container for this directory running next to the new one.
-			if err := replaceLegacyContainer(client); err != nil {
-				return "", err
-			}
-
 			if err := EnsureImage(client, image); err != nil {
 				return "", err
 			}
@@ -65,20 +57,6 @@ func EnsureContainer(client *http.Client, image string, sandbox bool) (string, e
 	return "", errors.New("could not create container")
 }
 
-// replaceLegacyContainer removes a container created under the old
-// denver.<hash> name. It reports nothing when there is no such container.
-func replaceLegacyContainer(client *http.Client) error {
-	legacy := LegacyContainerName()
-	removed, err := RemoveContainer(client, legacy)
-	if err != nil {
-		return err
-	}
-	if removed {
-		fmt.Fprintf(os.Stderr, "dv: replaced container from an older dv version (%s)\n", legacy)
-	}
-	return nil
-}
-
 // checkSandbox reports whether an existing container matches the requested
 // sandbox setting. Containers created before the sandbox label existed have no
 // label and are treated as non-sandbox containers.
@@ -86,7 +64,7 @@ func checkSandbox(c *Container, sandbox bool) error {
 	if c.Sandbox() == sandbox {
 		return nil
 	}
-	return fmt.Errorf("container %s already exists with a different sandbox setting; run \"dv down\" and try again", c.Name())
+	return fmt.Errorf("container %s already exists with a different sandbox setting; run \"paguro down\" and try again", c.Name())
 }
 
 func startAndWait(client *http.Client, containerID string) error {

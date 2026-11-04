@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -21,20 +21,14 @@ func down(cmd *cobra.Command, args []string) error {
 		return downAll(client)
 	}
 
-	// A container still carrying the legacy denver.<hash> name is removed as
-	// well, so this directory ends up with no container either way.
-	removed := false
-	for _, name := range []string{container.ContainerName(), container.LegacyContainerName()} {
-		ok, err := container.RemoveContainer(client, name)
-		if err != nil {
-			return err
-		}
-		if ok {
-			removed = true
-			fmt.Printf("%s removed\n", name)
-		}
+	name := container.ContainerName()
+	removed, err := container.RemoveContainer(client, name)
+	if err != nil {
+		return err
 	}
-	if !removed {
+	if removed {
+		fmt.Printf("%s removed\n", name)
+	} else {
 		fmt.Printf("no container for this directory\n")
 	}
 	return nil
@@ -62,8 +56,8 @@ var downCmd = &cobra.Command{
 	Short: "Stop and remove the container for the current directory",
 	Long: `down stops and removes the container that belongs to the current directory.
 
-With --all it stops and removes every container dv created, whatever directory
-it belongs to.`,
+With --all it stops and removes every container paguro created, whatever
+directory it belongs to.`,
 	Args: cobra.NoArgs,
 	RunE: down,
 }

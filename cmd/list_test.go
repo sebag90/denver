@@ -4,23 +4,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 )
 
 func TestListRows(t *testing.T) {
 	containers := []container.Container{
 		{
-			Names:  []string{"/dv.22"},
+			Names:  []string{"/paguro.22"},
 			State:  "running",
-			Labels: map[string]string{"denver.directory": "/src/b"},
+			Labels: map[string]string{"paguro.directory": "/src/b"},
 		},
 		{
-			Names:  []string{"/denver.11"},
+			Names:  []string{"/paguro.11"},
 			State:  "exited",
-			Labels: map[string]string{"denver.directory": "/src/a", "denver.sandbox": "true"},
+			Labels: map[string]string{"paguro.directory": "/src/a", "paguro.sandbox": "true"},
 		},
 		{
-			Names: []string{"/dv.33"},
+			Names: []string{"/paguro.33"},
 			State: "created",
 		},
 	}
@@ -34,26 +34,26 @@ func TestListRows(t *testing.T) {
 		t.Errorf("header = %v", got)
 	}
 	// Sorted by directory; the container without a directory comes first.
-	if got := strings.Fields(lines[1]); strings.Join(got, ",") != "dv.33,-,created,no" {
+	if got := strings.Fields(lines[1]); strings.Join(got, ",") != "paguro.33,-,created,no" {
 		t.Errorf("line 1 = %v", got)
 	}
-	if got := strings.Fields(lines[2]); strings.Join(got, ",") != "denver.11,/src/a,exited,yes" {
+	if got := strings.Fields(lines[2]); strings.Join(got, ",") != "paguro.11,/src/a,exited,yes" {
 		t.Errorf("line 2 = %v", got)
 	}
-	if got := strings.Fields(lines[3]); strings.Join(got, ",") != "dv.22,/src/b,running,no" {
+	if got := strings.Fields(lines[3]); strings.Join(got, ",") != "paguro.22,/src/b,running,no" {
 		t.Errorf("line 3 = %v", got)
 	}
 }
 
 func TestListRowsDoesNotReorderInput(t *testing.T) {
 	containers := []container.Container{
-		{Names: []string{"/dv.2"}, Labels: map[string]string{"denver.directory": "/b"}},
-		{Names: []string{"/dv.1"}, Labels: map[string]string{"denver.directory": "/a"}},
+		{Names: []string{"/paguro.2"}, Labels: map[string]string{"paguro.directory": "/b"}},
+		{Names: []string{"/paguro.1"}, Labels: map[string]string{"paguro.directory": "/a"}},
 	}
 
 	listRows(containers)
 
-	if containers[0].Name() != "dv.2" {
+	if containers[0].Name() != "paguro.2" {
 		t.Errorf("input was reordered: %v", containers[0].Name())
 	}
 }

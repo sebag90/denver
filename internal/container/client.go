@@ -75,7 +75,7 @@ func NegotiateApiVersion(client *http.Client) error {
 	}
 
 	if !validApiVersion(version.ApiVersion) {
-		return nil // keep the newest version dv knows
+		return nil // keep the newest version paguro knows
 	}
 	if compareApiVersions(version.ApiVersion, preferredApiVersion) < 0 {
 		apiVersion = version.ApiVersion

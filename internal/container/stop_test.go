@@ -34,11 +34,11 @@ func containerListTransport(t *testing.T, body string) (*http.Client, *[]string)
 
 func TestRemoveAllContainersRemovesOnlyManagedContainers(t *testing.T) {
 	const body = `[
-		{"Id":"1","Names":["/dv.11"],"State":"running","Labels":{"denver.project":"dv.11"}},
-		{"Id":"2","Names":["/denver.22"],"State":"exited","Labels":{"denver.project":"denver.22"}},
-		{"Id":"3","Names":["/dv.33"],"State":"running","Labels":{}},
+		{"Id":"1","Names":["/paguro.11"],"State":"running","Labels":{"paguro.project":"paguro.11"}},
+		{"Id":"2","Names":["/paguro.22"],"State":"exited","Labels":{"paguro.project":"paguro.22"}},
+		{"Id":"3","Names":["/paguro.33"],"State":"running","Labels":{}},
 		{"Id":"4","Names":["/unrelated"],"State":"running"},
-		{"Id":"5","Names":["/dv.notahash"],"State":"running"}
+		{"Id":"5","Names":["/paguro.notahash"],"State":"running"}
 	]
 `
 	client, requests := containerListTransport(t, body)
@@ -47,7 +47,7 @@ func TestRemoveAllContainersRemovesOnlyManagedContainers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"dv.11", "denver.22", "dv.33"}; strings.Join(names, ",") != strings.Join(want, ",") {
+	if want := []string{"paguro.11", "paguro.22", "paguro.33"}; strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Errorf("removed names = %v, want %v", names, want)
 	}
 	// Running containers are stopped before they are removed; the exited one is
@@ -72,11 +72,11 @@ func TestRemoveAllContainersWithoutManagedContainers(t *testing.T) {
 	}
 }
 
-func TestRemoveContainerFindsLegacyName(t *testing.T) {
+func TestRemoveContainerFindsByName(t *testing.T) {
 	client, requests := containerListTransport(t,
-		`[{"Id":"7","Names":["/denver.77"],"State":"running","Labels":{"denver.project":"denver.77"}}]`)
+		`[{"Id":"7","Names":["/paguro.77"],"State":"running","Labels":{"paguro.project":"paguro.77"}}]`)
 
-	removed, err := RemoveContainer(client, "denver.77")
+	removed, err := RemoveContainer(client, "paguro.77")
 	if err != nil {
 		t.Fatal(err)
 	}

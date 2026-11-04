@@ -104,8 +104,9 @@ func hostMounts() (binds []Bind, env []string) {
 	return binds, env
 }
 
-// engineMounts exposes the daemon socket dv is talking to inside the container,
-// together with the environment variables that point the CLIs at it. This makes
+// engineMounts exposes the daemon socket paguro is talking to inside the
+// container, together with the environment variables that point the CLIs at
+// it. This makes
 // the container a "docker-outside-of-docker" style sandbox: containers started
 // from inside it run on the host daemon, next to the project container itself.
 //
@@ -119,8 +120,9 @@ func hostMounts() (binds []Bind, env []string) {
 // daemon whose socket is group-owned would need the container user in that
 // group as well.
 //
-// When no socket is listening (for example when dv has not been pointed at a
-// daemon yet), nothing is mounted and the container simply has no engine access.
+// When no socket is listening (for example when paguro has not been pointed at
+// a daemon yet), nothing is mounted and the container simply has no engine
+// access.
 func engineMounts(socket string, engine Engine) (binds []Bind, env []string) {
 	info, err := os.Stat(socket)
 	if err != nil || info.Mode()&os.ModeSocket == 0 {

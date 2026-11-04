@@ -56,7 +56,7 @@ func TestStartJobStartsDetachedExec(t *testing.T) {
 		t.Fatalf("create payload Cmd = %T, want []any", create["Cmd"])
 	}
 	want := []any{
-		"/bin/sh", "-c", startJobScript, "dv-job", jobID,
+		"/bin/sh", "-c", startJobScript, "paguro-job", jobID,
 		JobsDir + "/" + jobID + "/log",
 	}
 	// The start time sits between the wrapper and the command.
@@ -111,7 +111,7 @@ func TestJobScripts(t *testing.T) {
 	const started = "1700000000"
 
 	start := exec.Command("sh", "-c", script(startJobScript),
-		"dv-job", jobID, logPath, started,
+		"paguro-job", jobID, logPath, started,
 		"sh", "-c", "echo hello; exit 3")
 	if out, err := start.CombinedOutput(); err != nil {
 		t.Fatalf("start script: %v\n%s", err, out)
@@ -166,7 +166,7 @@ func TestJobScripts(t *testing.T) {
 		if follow {
 			mode = "follow"
 		}
-		logs := exec.Command("sh", "-c", script(logJobScript), "dv-logs", jobID, mode)
+		logs := exec.Command("sh", "-c", script(logJobScript), "paguro-logs", jobID, mode)
 		out, err := logs.Output()
 		if err != nil {
 			t.Fatalf("log script (follow=%v): %v", follow, err)
@@ -179,9 +179,9 @@ func TestJobScripts(t *testing.T) {
 
 func TestParseJobs(t *testing.T) {
 	out := strings.Join([]string{
-		"bbbbbbbbbbbb\trunning\t\t1700000100\t/tmp/dv/jobs/bbbbbbbbbbbb/log\tsleep 100",
-		"aaaaaaaaaaaa\texited\t1\t1700000000\t/tmp/dv/jobs/aaaaaaaaaaaa/log\tfalse",
-		"cccccccccccc\tlost\t\t1700000200\t/tmp/dv/jobs/cccccccccccc/log\tsh",
+		"bbbbbbbbbbbb\trunning\t\t1700000100\t/tmp/paguro/jobs/bbbbbbbbbbbb/log\tsleep 100",
+		"aaaaaaaaaaaa\texited\t1\t1700000000\t/tmp/paguro/jobs/aaaaaaaaaaaa/log\tfalse",
+		"cccccccccccc\tlost\t\t1700000200\t/tmp/paguro/jobs/cccccccccccc/log\tsh",
 		"",
 	}, "\r\n")
 
@@ -205,7 +205,7 @@ func TestParseJobs(t *testing.T) {
 	if !exited.Started.Equal(time.Unix(1700000000, 0)) {
 		t.Errorf("started = %v", exited.Started)
 	}
-	if exited.Command != "false" || exited.Log != "/tmp/dv/jobs/aaaaaaaaaaaa/log" {
+	if exited.Command != "false" || exited.Log != "/tmp/paguro/jobs/aaaaaaaaaaaa/log" {
 		t.Errorf("exited job = %+v", exited)
 	}
 
@@ -245,7 +245,7 @@ func TestValidJobID(t *testing.T) {
 
 func TestLogCommand(t *testing.T) {
 	printCmd := LogCommand("0123456789ab", false)
-	if printCmd[3] != "dv-logs" || printCmd[4] != "0123456789ab" || printCmd[5] != "print" {
+	if printCmd[3] != "paguro-logs" || printCmd[4] != "0123456789ab" || printCmd[5] != "print" {
 		t.Errorf("LogCommand = %v", printCmd)
 	}
 	followCmd := LogCommand("0123456789ab", true)

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 )
 
 func TestJobRows(t *testing.T) {

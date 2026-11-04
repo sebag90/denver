@@ -223,8 +223,8 @@ func TestCheckSandbox(t *testing.T) {
 		sandbox bool
 		wantErr bool
 	}{
-		{"legacy container is not sandboxed", nil, false, false},
-		{"legacy container cannot satisfy sandbox", nil, true, true},
+		{"unlabelled container is not sandboxed", nil, false, false},
+		{"unlabelled container cannot satisfy sandbox", nil, true, true},
 		{"matching sandbox", map[string]string{sandboxLabel: "true"}, true, false},
 		{"matching normal", map[string]string{sandboxLabel: "false"}, false, false},
 		{"normal container cannot satisfy sandbox", map[string]string{sandboxLabel: "false"}, true, true},
@@ -232,7 +232,7 @@ func TestCheckSandbox(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := checkSandbox(&Container{Names: []string{"/denver.1"}, Labels: tc.labels}, tc.sandbox)
+			err := checkSandbox(&Container{Names: []string{"/paguro.1"}, Labels: tc.labels}, tc.sandbox)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("checkSandbox() error = %v, wantErr %v", err, tc.wantErr)
 			}

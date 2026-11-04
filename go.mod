@@ -1,4 +1,4 @@
-module github.com/sebag90/denver
+module github.com/sebag90/paguro
 
 go 1.27.1
 

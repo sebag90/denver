@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -59,14 +59,14 @@ var runCmd = &cobra.Command{
 starting the container first if needed.
 
 stdin, stdout and stderr are forwarded and the command's exit code is returned.
-Flags after the command name belong to the command, so "dv run ls -la"
+Flags after the command name belong to the command, so "paguro run ls -la"
 works without a "--" separator.
 
 With --detach the command is started in the background and run returns
 immediately. Its output is written to a log file inside the container, and the
-job appears in "dv ps" and can be followed with "dv logs -f <job>". Detached
-jobs keep running while the container is up; they end when it is stopped or
-removed.`,
+job appears in "paguro ps" and can be followed with "paguro logs -f <job>".
+Detached jobs keep running while the container is up; they end when it is
+stopped or removed.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runInContainer,
 }

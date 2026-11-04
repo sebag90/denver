@@ -11,7 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -65,8 +65,8 @@ func ps(cmd *cobra.Command, args []string) error {
 }
 
 // psTargets returns the containers whose jobs ps lists: the container for the
-// current directory, or every running container dv created when all is set.
-// Jobs of stopped containers cannot be read, because their metadata lives
+// current directory, or every running container paguro created when all is
+// set. Jobs of stopped containers cannot be read, because their metadata lives
 // inside the container.
 func psTargets(client *http.Client, all bool) ([]container.Container, error) {
 	if !all {
@@ -164,20 +164,20 @@ var psCmd = &cobra.Command{
 	Use:     "ps",
 	Aliases: []string{"jobs"},
 	Short:   "List detached jobs and the directory they run in",
-	Long: `ps lists the commands started with "dv run --detach" in the container for
-the current directory, together with their status, exit code, age and the
-directory they run in.
+	Long: `ps lists the commands started with "paguro run --detach" in the
+container for the current directory, together with their status, exit code,
+age and the directory they run in.
 
 A running job is one whose process is still alive; an exited job has finished
 and reports its exit code; a lost job disappeared without recording one, for
 example because the container was stopped while it ran.
 
-With --all, ps lists the jobs of every running container dv created, not just
-the current directory's. Jobs of stopped containers cannot be listed, because
-their metadata lives inside the container.
+With --all, ps lists the jobs of every running container paguro created, not
+just the current directory's. Jobs of stopped containers cannot be listed,
+because their metadata lives inside the container.
 
-Only jobs started by dv are listed. Use "dv run ps aux" to see every process
-in the container, and "dv logs <job>" to read a job's output.`,
+Only jobs started by paguro are listed. Use "paguro run ps aux" to see every
+process in the container, and "paguro logs <job>" to read a job's output.`,
 	Args: cobra.NoArgs,
 	RunE: ps,
 }

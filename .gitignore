@@ -162,5 +162,5 @@ cython_debug/
 #.idea/
 config.ini
 main
-denver
-dv
+paguro
+pg

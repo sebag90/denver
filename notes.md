@@ -33,7 +33,8 @@ func createContainer(client *http.Client, isPodman bool, isRootless bool) {
 
 #### 3. Exposing the Engine Socket
 
-The container gets the daemon socket dv itself talks to (`SocketPath()`), mounted
+The container gets the daemon socket paguro itself talks to (`SocketPath()`),
+mounted
 at the path the matching CLI expects:
 
 - Podman: `<socket>:/run/podman/podman.sock`

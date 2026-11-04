@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/sebag90/denver/internal/container"
+	"github.com/sebag90/paguro/internal/container"
 	"github.com/spf13/cobra"
 )
 
@@ -16,8 +16,8 @@ var imageFlag string
 // sandboxFlag starts containers without bind-mounting the working directory.
 var sandboxFlag bool
 
-// version is the dv release. Release builds set it via
-// -ldflags "-X github.com/sebag90/denver/cmd.version=v0.1.0"; it must stay a
+// version is the paguro release. Release builds set it via
+// -ldflags "-X github.com/sebag90/paguro/cmd.version=v0.1.0"; it must stay a
 // constant string for the linker to be able to overwrite it. When it is left
 // at "dev", the module version recorded in the build info is used instead
 // (set by "go install ...@version" and by plain "go build" with VCS stamping).
@@ -37,13 +37,13 @@ func resolvedVersion() string {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dv",
+	Use:   "paguro",
 	Short: "Per-directory development containers on top of Podman",
-	Long: `dv manages one container per working directory.
+	Long: `paguro manages one container per working directory.
 
 The container's name is derived from the current directory, and its main
 process is an idle keep-alive, so it stays up after you leave a shell. Run
-"dv shell" to open a new session at any time.`,
+"paguro shell" to open a new session at any time.`,
 	Version:       resolvedVersion(),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -53,7 +53,7 @@ process is an idle keep-alive, so it stays up after you leave a shell. Run
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "dv: %v\n", err)
+		fmt.Fprintf(os.Stderr, "paguro: %v\n", err)
 		os.Exit(1)
 	}
 }

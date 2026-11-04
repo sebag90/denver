@@ -17,7 +17,7 @@ import (
 // JobsDir is where a container keeps the metadata and logs of detached jobs.
 // It lives in the container's writable layer, so jobs and their logs disappear
 // when the container is removed.
-const JobsDir = "/tmp/dv/jobs"
+const JobsDir = "/tmp/paguro/jobs"
 
 // Job is a command started by StartJob.
 type Job struct {
@@ -40,7 +40,7 @@ const startJobScript = `job=$1
 log=$2
 started=$3
 shift 3
-dir=/tmp/dv/jobs/$job
+dir=/tmp/paguro/jobs/$job
 mkdir -p "$dir" || exit 1
 printf '%s\n' "$@" > "$dir/cmd" || exit 1
 printf '%s\n' "$$" > "$dir/pid" || exit 1
@@ -53,7 +53,7 @@ printf '%s\n' "$code" > "$dir/exit"
 
 // listJobsScript prints one tab separated record per job:
 // ID, status, exit code, start time, log path, command.
-const listJobsScript = `dir=/tmp/dv/jobs
+const listJobsScript = `dir=/tmp/paguro/jobs
 for jobdir in "$dir"/*/; do
 	[ -d "$jobdir" ] || continue
 	id=${jobdir%/}
@@ -79,10 +79,10 @@ done
 
 // logJobScript prints the log of a job, or follows it when it is still running
 // and the second argument is "follow".
-const logJobScript = `dir=/tmp/dv/jobs/$1
-[ -d "$dir" ] || { echo "dv: no such job: $1" >&2; exit 1; }
-log=$(cat "$dir/logpath" 2>/dev/null) || { echo "dv: job $1 has no log recorded" >&2; exit 1; }
-[ -f "$log" ] || { echo "dv: log file is missing for job $1: $log" >&2; exit 1; }
+const logJobScript = `dir=/tmp/paguro/jobs/$1
+[ -d "$dir" ] || { echo "paguro: no such job: $1" >&2; exit 1; }
+log=$(cat "$dir/logpath" 2>/dev/null) || { echo "paguro: job $1 has no log recorded" >&2; exit 1; }
+[ -f "$log" ] || { echo "paguro: log file is missing for job $1: $log" >&2; exit 1; }
 if [ "$2" = follow ] && [ ! -f "$dir/exit" ]; then
 	exec tail -n +1 -f "$log"
 fi
@@ -120,14 +120,14 @@ func HasJob(client *http.Client, socketPath, containerID, jobID string) (bool, e
 // HasJobCommand builds the exec command that reports whether a job exists in a
 // container through its exit code.
 func HasJobCommand(jobID string) []string {
-	return []string{"/bin/sh", "-c", `[ -d "$1" ]`, "dv-job", JobsDir + "/" + jobID}
+	return []string{"/bin/sh", "-c", `[ -d "$1" ]`, "paguro-job", JobsDir + "/" + jobID}
 }
 
 // StartJob starts argv as a detached exec session and returns the job ID. The
 // command runs independently of the caller; its output goes to logPath (inside
 // the container), which defaults to a file in the job's directory.
 //
-// The ID is 12 random hex characters. dv treats job IDs as unique across
+// The ID is 12 random hex characters. paguro treats job IDs as unique across
 // containers, which is what lets a job be looked up without knowing which
 // container started it.
 //
@@ -146,7 +146,7 @@ func StartJob(client *http.Client, containerID string, argv []string, logPath st
 	}
 
 	cmd := []string{
-		"/bin/sh", "-c", startJobScript, "dv-job",
+		"/bin/sh", "-c", startJobScript, "paguro-job",
 		jobID, logPath, strconv.FormatInt(time.Now().Unix(), 10),
 	}
 	cmd = append(cmd, argv...)
@@ -260,7 +260,7 @@ func LogCommand(jobID string, follow bool) []string {
 	if follow {
 		mode = "follow"
 	}
-	return []string{"/bin/sh", "-c", logJobScript, "dv-logs", jobID, mode}
+	return []string{"/bin/sh", "-c", logJobScript, "paguro-logs", jobID, mode}
 }
 
 func newJobID() (string, error) {
