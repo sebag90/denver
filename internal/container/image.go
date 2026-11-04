@@ -9,10 +9,10 @@ import (
 )
 
 // DefaultImage is used when no --image flag is given.
-const DefaultImage = "ghcr.io/sebag90/devenv:latest"
+const DefaultImage = "ghcr.io/sebag90/devshell:latest"
 
 // NormalizeImage adds the implicit :latest tag the way the CLIs do, so that
-// "ghcr.io/sebag90/devenv" and "ghcr.io/sebag90/devenv:latest" refer to the
+// "ghcr.io/sebag90/devshell" and "ghcr.io/sebag90/devshell:latest" refer to the
 // same image.
 func NormalizeImage(ref string) string {
 	if ref == "" {

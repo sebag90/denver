@@ -104,7 +104,7 @@ paguro list                # show all containers and their directories
 `paguro` and `pg` are the same binary, so every command above also works with
 `pg` (for example `pg up` or `pg shell`).
 
-The default image is [`ghcr.io/sebag90/devenv:latest`](https://github.com/sebag90/devenv/pkgs/container/devenv). It is pulled
+The default image is [`ghcr.io/sebag90/devshell:latest`](https://github.com/sebag90/devshell/pkgs/container/devshell). It is pulled
 automatically the first time a container is created. Use another image with
 the global `--image` flag:
 
@@ -133,7 +133,7 @@ paguro --image ubuntu:24.04 shell
 
 | Flag                   | Scope   | Description                                                                              |
 | ---------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `--image <ref>`        | global  | Image to use when creating a new container. Defaults to `ghcr.io/sebag90/devenv:latest`. |
+| `--image <ref>`        | global  | Image to use when creating a new container. Defaults to `ghcr.io/sebag90/devshell:latest`. |
 | `-s`, `--sandbox`      | global  | Do not bind-mount the current directory into the container.                              |
 | `-S`, `--shell <name>` | `shell` | Shell to start inside the container. Defaults to the basename of `$SHELL`, or `bash`.    |
 | `--all`                | `down`  | Stop and remove the containers of every directory, not just the current one.             |
